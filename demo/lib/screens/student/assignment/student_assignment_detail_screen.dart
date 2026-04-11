@@ -1,10 +1,16 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:demo/theme/app_colors.dart';
+import 'package:demo/theme/app_spacing.dart';
+import 'package:demo/widgets/ui/cc_button.dart';
+import 'package:demo/widgets/ui/cc_card.dart';
+import 'package:demo/widgets/ui/cc_section_header.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:demo/services/pbl_supabase_client.dart';
 
 class StudentAssignmentDetailScreen extends StatefulWidget {
   final String classId;
@@ -88,11 +94,12 @@ class _StudentAssignmentDetailScreenState
           '${DateTime.now().millisecondsSinceEpoch}_${_pickedFile!.name}';
       final path =
           'student_assignments/${widget.classId}/${widget.assignmentId}/${student.uid}/$fileName';
+      final supabase = PblSupabaseClient.client;
 
       // 1. Upload to Supabase Storage
       if (_pickedFile!.bytes != null) {
         // Web or Memory
-        await Supabase.instance.client.storage
+        await supabase.storage
             .from('assignments')
             .uploadBinary(
               path,
@@ -101,7 +108,7 @@ class _StudentAssignmentDetailScreenState
             );
       } else if (_pickedFile!.path != null) {
         // Mobile IO
-        await Supabase.instance.client.storage
+        await supabase.storage
             .from('assignments')
             .upload(
               path,
@@ -110,7 +117,7 @@ class _StudentAssignmentDetailScreenState
             );
       }
 
-      final fullPath = await Supabase.instance.client.storage
+      final fullPath = await supabase.storage
           .from('assignments')
           .createSignedUrl(path, 60 * 60 * 24 * 365); // 1 year validity
 
@@ -172,33 +179,55 @@ class _StudentAssignmentDetailScreenState
     }
   }
 
+  String _formatDateTime(DateTime dateTime) {
+    final day = dateTime.day.toString().padLeft(2, '0');
+    final month = dateTime.month.toString().padLeft(2, '0');
+    final year = dateTime.year;
+    final hour = dateTime.hour.toString().padLeft(2, '0');
+    final minute = dateTime.minute.toString().padLeft(2, '0');
+    return '$day/$month/$year, $hour:$minute';
+  }
+
+  String _submissionTimeLabel() {
+    final submittedAt = _existingSubmission?['submittedAt'];
+    if (submittedAt is Timestamp) {
+      return _formatDateTime(submittedAt.toDate());
+    }
+    return 'Just now';
+  }
+
   @override
   Widget build(BuildContext context) {
-    // Determine status color
+    final theme = Theme.of(context);
     final isSubmitted = _existingSubmission != null;
+    final deadline = widget.assignmentData['deadline'] is Timestamp
+        ? (widget.assignmentData['deadline'] as Timestamp).toDate()
+        : null;
+    final isOverdue = deadline != null && DateTime.now().isAfter(deadline);
+    final title = widget.assignmentData['title'] ?? 'Untitled Assignment';
+    final description =
+        widget.assignmentData['description'] ?? 'No description provided.';
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF4F8FF),
+      backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text(
-          "Assignment Details",
-          style: TextStyle(color: Colors.white),
+        title: const Text('Assignment Details'),
+        backgroundColor: AppColors.background,
+        foregroundColor: AppColors.textPrimary,
+        centerTitle: true,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_new_rounded),
+          onPressed: () => Navigator.of(context).pop(),
         ),
-        backgroundColor: const Color(0xFFF4F8FF),
-        elevation: 0,
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(AppSpacing.lg),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Header Card
-            Container(
+            CcCard(
               padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: const Color(0xFF1E2E52),
-                borderRadius: BorderRadius.circular(16),
-              ),
+              glass: true,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -207,94 +236,84 @@ class _StudentAssignmentDetailScreenState
                       Container(
                         padding: const EdgeInsets.all(10),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF3B82F6).withOpacity(0.2),
+                          color: AppColors.surfaceAlt,
                           borderRadius: BorderRadius.circular(10),
                         ),
                         child: const Icon(
                           Icons.assignment,
-                          color: Color(0xFF3B82F6),
+                          color: AppColors.primary,
                           size: 28,
                         ),
                       ),
                       const SizedBox(width: 16),
                       Expanded(
                         child: Text(
-                          widget.assignmentData['title'] ??
-                              'Untitled Assignment',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
+                          title,
+                          style: theme.textTheme.titleLarge?.copyWith(
+                            color: AppColors.textPrimary,
                           ),
                         ),
                       ),
                     ],
                   ),
                   const SizedBox(height: 16),
-                  const Divider(color: Colors.white10),
+                  const Divider(color: Color(0x224A6FBF)),
                   const SizedBox(height: 12),
 
-                  // Deadline Display
-                  if (widget.assignmentData['deadline'] != null) ...[
-                    Builder(
-                      builder: (context) {
-                        final Timestamp deadlineTimestamp =
-                            widget.assignmentData['deadline'];
-                        final DateTime deadline = deadlineTimestamp.toDate();
-                        final bool isOverdue = DateTime.now().isAfter(deadline);
-
-                        return Container(
-                          margin: const EdgeInsets.only(bottom: 12),
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 8,
-                          ),
-                          decoration: BoxDecoration(
+                  if (deadline != null) ...[
+                    Container(
+                      margin: const EdgeInsets.only(bottom: 12),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 8,
+                      ),
+                      decoration: BoxDecoration(
+                        color: (isOverdue ? AppColors.error : AppColors.success)
+                            .withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                          color: isOverdue
+                              ? AppColors.error
+                              : AppColors.success,
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.schedule,
                             color: isOverdue
-                                ? Colors.red.withOpacity(0.2)
-                                : Colors.green.withOpacity(0.2),
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(
-                              color: isOverdue ? Colors.red : Colors.green,
+                                ? AppColors.error
+                                : AppColors.success,
+                            size: 18,
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Due: ${_formatDateTime(deadline).split(',').first}',
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              color: isOverdue
+                                  ? AppColors.error
+                                  : AppColors.success,
+                              fontWeight: FontWeight.w700,
                             ),
                           ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                Icons.access_time,
-                                color: isOverdue ? Colors.red : Colors.green,
-                                size: 18,
-                              ),
-                              const SizedBox(width: 8),
-                              Text(
-                                "Due: ${deadline.day}/${deadline.month}/${deadline.year}",
-                                style: TextStyle(
-                                  color: isOverdue ? Colors.red : Colors.green,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ],
-                          ),
-                        );
-                      },
+                        ],
+                      ),
                     ),
                   ],
 
-                  const Text(
-                    "Description",
-                    style: TextStyle(
-                      color: Colors.white70,
-                      fontWeight: FontWeight.bold,
+                  Text(
+                    'Description',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: AppColors.textMuted,
+                      fontWeight: FontWeight.w700,
                     ),
                   ),
                   const SizedBox(height: 6),
                   Text(
-                    widget.assignmentData['description'] ??
-                        'No description provided.',
-                    style: const TextStyle(
-                      color: Colors.white60,
-                      fontSize: 15,
+                    description,
+                    style: theme.textTheme.bodyLarge?.copyWith(
+                      color: AppColors.textPrimary,
                       height: 1.4,
                     ),
                   ),
@@ -308,30 +327,32 @@ class _StudentAssignmentDetailScreenState
                       child: Container(
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.05),
+                          color: AppColors.surfaceAlt,
                           borderRadius: BorderRadius.circular(10),
-                          border: Border.all(color: Colors.white10),
+                          border: Border.all(
+                            color: AppColors.primary.withValues(alpha: 0.25),
+                          ),
                         ),
                         child: Row(
                           children: [
                             const Icon(
                               Icons.attach_file,
-                              color: Colors.cyanAccent,
+                              color: AppColors.primary,
                             ),
                             const SizedBox(width: 12),
                             Expanded(
                               child: Text(
                                 widget.assignmentData['attachmentName'] ??
-                                    "Attachment",
-                                style: const TextStyle(
-                                  color: Colors.cyanAccent,
-                                  fontWeight: FontWeight.w600,
+                                    'Attachment',
+                                style: theme.textTheme.bodyMedium?.copyWith(
+                                  color: AppColors.primary,
+                                  fontWeight: FontWeight.w700,
                                 ),
                               ),
                             ),
                             const Icon(
                               Icons.open_in_new,
-                              color: Colors.white30,
+                              color: AppColors.textMuted,
                               size: 18,
                             ),
                           ],
@@ -345,67 +366,60 @@ class _StudentAssignmentDetailScreenState
 
             const SizedBox(height: 24),
 
-            // Submission Section
-            const Text(
-              "Your Work",
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
+            const CcSectionHeader(
+              title: 'Your Work',
+              subtitle: 'Attach and submit your assignment file.',
             ),
             const SizedBox(height: 12),
 
             if (isSubmitted)
-              Container(
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF10B981).withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
-                    color: const Color(0xFF10B981).withOpacity(0.3),
+              CcCard(
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(4),
+                  decoration: BoxDecoration(
+                    color: AppColors.success.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(
+                      color: AppColors.success.withValues(alpha: 0.35),
+                    ),
                   ),
-                ),
-                child: Column(
-                  children: [
-                    const Icon(
-                      Icons.check_circle,
-                      color: Color(0xFF10B981),
-                      size: 48,
-                    ),
-                    const SizedBox(height: 12),
-                    const Text(
-                      "Submitted successfully!",
-                      style: TextStyle(
-                        color: Color(0xFF10B981),
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
+                  child: Column(
+                    children: [
+                      const Icon(
+                        Icons.check_circle,
+                        color: AppColors.success,
+                        size: 48,
                       ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      "Submitted on ${_existingSubmission!['submittedAt'] is Timestamp ? (_existingSubmission!['submittedAt'] as Timestamp).toDate().toString().split('.')[0] : 'Just now'}",
-                      style: const TextStyle(
-                        color: Colors.white54,
-                        fontSize: 12,
+                      const SizedBox(height: 12),
+                      Text(
+                        'Submitted successfully!',
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          color: AppColors.success,
+                        ),
                       ),
-                    ),
-                  ],
+                      const SizedBox(height: 8),
+                      Text(
+                        'Submitted on ${_submissionTimeLabel()}',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: AppColors.textMuted,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               )
             else
-              Container(
+              CcCard(
                 padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF1E2E52),
-                  borderRadius: BorderRadius.circular(16),
-                ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      "Attach your work",
-                      style: TextStyle(color: Colors.white70, fontSize: 14),
+                    Text(
+                      'Attach your work',
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: AppColors.textMuted,
+                      ),
                     ),
                     const SizedBox(height: 12),
 
@@ -414,30 +428,32 @@ class _StudentAssignmentDetailScreenState
                         margin: const EdgeInsets.only(bottom: 20),
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.05),
+                          color: AppColors.surfaceAlt,
                           borderRadius: BorderRadius.circular(10),
-                          border: Border.all(color: Colors.white10),
+                          border: Border.all(
+                            color: AppColors.primary.withValues(alpha: 0.25),
+                          ),
                         ),
                         child: Row(
                           children: [
                             const Icon(
                               Icons.insert_drive_file,
-                              color: Colors.blueAccent,
+                              color: AppColors.primary,
                             ),
                             const SizedBox(width: 12),
                             Expanded(
                               child: Text(
                                 _pickedFile!.name,
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.w500,
+                                style: theme.textTheme.bodyMedium?.copyWith(
+                                  color: AppColors.textPrimary,
+                                  fontWeight: FontWeight.w600,
                                 ),
                               ),
                             ),
                             IconButton(
                               icon: const Icon(
                                 Icons.close,
-                                color: Colors.redAccent,
+                                color: AppColors.error,
                               ),
                               onPressed: () =>
                                   setState(() => _pickedFile = null),
@@ -453,25 +469,27 @@ class _StudentAssignmentDetailScreenState
                           height: 120,
                           width: double.infinity,
                           decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.05),
+                            color: AppColors.surfaceAlt,
                             borderRadius: BorderRadius.circular(12),
                             border: Border.all(
-                              color: Colors.white10,
+                              color: AppColors.primary.withValues(alpha: 0.22),
                               style: BorderStyle.solid,
                             ),
                           ),
-                          child: const Column(
+                          child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              Icon(
+                              const Icon(
                                 Icons.upload_file,
-                                color: Colors.white30,
+                                color: AppColors.primary,
                                 size: 40,
                               ),
-                              SizedBox(height: 8),
+                              const SizedBox(height: 8),
                               Text(
-                                "Tap to attach file",
-                                style: TextStyle(color: Colors.white30),
+                                'Tap to attach file',
+                                style: theme.textTheme.bodyMedium?.copyWith(
+                                  color: AppColors.textMuted,
+                                ),
                               ),
                             ],
                           ),
@@ -480,30 +498,11 @@ class _StudentAssignmentDetailScreenState
 
                     const SizedBox(height: 20),
 
-                    SizedBox(
-                      width: double.infinity,
-                      height: 50,
-                      child: ElevatedButton(
-                        onPressed: _isSubmitting ? null : _submitAssignment,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: cOnSumbitColor,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                        child: _isSubmitting
-                            ? const CircularProgressIndicator(
-                                color: Colors.white,
-                              )
-                            : const Text(
-                                "Hand In",
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                      ),
+                    CcButton(
+                      label: 'Hand In',
+                      isLoading: _isSubmitting,
+                      icon: const Icon(Icons.send_rounded, color: Colors.white),
+                      onPressed: _submitAssignment,
                     ),
                   ],
                 ),
@@ -513,6 +512,4 @@ class _StudentAssignmentDetailScreenState
       ),
     );
   }
-
-  Color get cOnSumbitColor => const Color(0xFF3B82F6);
 }

@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:demo/widgets/ui/cc_loading_animation.dart';
 import 'package:demo/services/firestore_service.dart';
 import 'package:demo/services/moderation_service.dart';
 import 'package:demo/models/question.dart';
@@ -426,7 +427,7 @@ class _QuestionDetailScreenState extends State<QuestionDetailScreen> {
                 },
               ),
             ),
-            body: const Center(child: CircularProgressIndicator()),
+            body: const Center(child: CcLoadingAnimation()),
           );
         }
 
@@ -744,7 +745,7 @@ class _QuestionDetailScreenState extends State<QuestionDetailScreen> {
                                 ? const SizedBox(
                                     width: 16,
                                     height: 16,
-                                    child: CircularProgressIndicator(
+                                    child: CcLoadingAnimation(
                                       strokeWidth: 2,
                                       valueColor: AlwaysStoppedAnimation<Color>(
                                         Colors.white,
@@ -771,7 +772,7 @@ class _QuestionDetailScreenState extends State<QuestionDetailScreen> {
                       if (snapshot.connectionState == ConnectionState.waiting) {
                         return const Padding(
                           padding: EdgeInsets.all(16),
-                          child: CircularProgressIndicator(),
+                          child: CcLoadingAnimation(),
                         );
                       }
 

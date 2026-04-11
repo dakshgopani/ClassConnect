@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:demo/widgets/ui/cc_loading_animation.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'concept_validation_screen.dart';
 import 'concept_video_validation_screen.dart';
@@ -89,7 +90,7 @@ class _StudentPracticeQuizAttemptScreenState
         stream: questionRef.orderBy('order').snapshots(),
         builder: (context, snapshot) {
           if (!snapshot.hasData) {
-            return const Center(child: CircularProgressIndicator());
+            return const Center(child: CcLoadingAnimation());
           }
 
           final questions = snapshot.data!.docs;

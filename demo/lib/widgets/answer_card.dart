@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:demo/models/answer.dart';
 import 'package:demo/models/reaction.dart';
 import 'package:intl/intl.dart';
+import 'package:flutter_markdown/flutter_markdown.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class AnswerCard extends StatelessWidget {
   final Answer answer;
@@ -21,14 +23,26 @@ class AnswerCard extends StatelessWidget {
     this.onMarkHelpful,
   });
 
+  Future<void> _openLink(String text) async {
+    final uri = Uri.tryParse(text);
+    if (uri == null) return;
+
+    await launchUrl(uri, mode: LaunchMode.externalApplication);
+  }
+
+  String _normalizeContent(String content) {
+    return content.replaceAll('\r\n', '\n').replaceAll('\t', '  ').trim();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       shape: answer.isHelpful
           ? RoundedRectangleBorder(
-          side: const BorderSide(color: Colors.green, width: 2),
-          borderRadius: BorderRadius.circular(12))
+              side: const BorderSide(color: Colors.green, width: 2),
+              borderRadius: BorderRadius.circular(12),
+            )
           : null,
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -102,8 +116,15 @@ class AnswerCard extends StatelessWidget {
                     if (isQuestionAuthor && !answer.isHelpful)
                       TextButton.icon(
                         onPressed: onMarkHelpful,
-                        icon: const Icon(Icons.check, size: 16, color: Colors.green),
-                        label: const Text('Mark Helpful', style: TextStyle(color: Colors.green, fontSize: 12)),
+                        icon: const Icon(
+                          Icons.check,
+                          size: 16,
+                          color: Colors.green,
+                        ),
+                        label: const Text(
+                          'Mark Helpful',
+                          style: TextStyle(color: Colors.green, fontSize: 12),
+                        ),
                       ),
 
                     if (answer.userId == currentUserId)
@@ -121,8 +142,51 @@ class AnswerCard extends StatelessWidget {
             ),
             const SizedBox(height: 12),
 
-            // Answer content
-            Text(answer.content, style: Theme.of(context).textTheme.bodyMedium),
+            // Answer content (markdown rendering for AI responses)
+            MarkdownBody(
+              data: _normalizeContent(answer.content),
+              selectable: true,
+              onTapLink: (text, href, title) {
+                if (href != null) {
+                  _openLink(href);
+                }
+              },
+              styleSheet: MarkdownStyleSheet.fromTheme(Theme.of(context))
+                  .copyWith(
+                    p: Theme.of(
+                      context,
+                    ).textTheme.bodyMedium?.copyWith(height: 1.45),
+                    h1: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
+                    h2: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
+                    h3: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
+                    listBullet: Theme.of(context).textTheme.bodyMedium,
+                    blockquoteDecoration: BoxDecoration(
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.surfaceContainerHighest,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: Theme.of(
+                          context,
+                        ).dividerColor.withValues(alpha: 0.6),
+                      ),
+                    ),
+                    codeblockDecoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.surfaceContainer,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    code: Theme.of(
+                      context,
+                    ).textTheme.bodySmall?.copyWith(fontFamily: 'monospace'),
+                    codeblockPadding: const EdgeInsets.all(12),
+                  ),
+            ),
             const SizedBox(height: 12),
 
             // Reactions
@@ -138,8 +202,8 @@ class AnswerCard extends StatelessWidget {
                       ? () => onReaction!(ReactionType.like)
                       : null,
                   isActive: answer.reactions.any(
-                        (r) =>
-                    r.userId == currentUserId &&
+                    (r) =>
+                        r.userId == currentUserId &&
                         r.type == ReactionType.like,
                   ),
                 ),
@@ -152,8 +216,8 @@ class AnswerCard extends StatelessWidget {
                       ? () => onReaction!(ReactionType.heart)
                       : null,
                   isActive: answer.reactions.any(
-                        (r) =>
-                    r.userId == currentUserId &&
+                    (r) =>
+                        r.userId == currentUserId &&
                         r.type == ReactionType.heart,
                   ),
                 ),

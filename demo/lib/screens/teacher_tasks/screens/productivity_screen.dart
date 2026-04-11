@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:demo/widgets/ui/cc_loading_animation.dart';
 import '../models/productivity.dart';
 import '../models/teacher_task.dart';
 import '../services/productivity_calculator.dart';
@@ -84,7 +85,7 @@ class ProductivityScreen extends StatelessWidget {
 
             if (snapshot.connectionState == ConnectionState.waiting &&
                 data.isEmpty) {
-              return const Center(child: CircularProgressIndicator());
+              return const Center(child: CcLoadingAnimation());
             }
 
             if (data.isEmpty) {

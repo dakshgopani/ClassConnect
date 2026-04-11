@@ -2,6 +2,7 @@ import 'package:demo/services/firestore_service.dart';
 import 'package:demo/services/student_chatbot_service.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:demo/widgets/ui/cc_loading_animation.dart';
 
 class ChatMessageItem {
   final String role;
@@ -303,7 +304,7 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
                           ? const SizedBox(
                               width: 18,
                               height: 18,
-                              child: CircularProgressIndicator(
+                              child: CcLoadingAnimation(
                                 strokeWidth: 2,
                                 color: Colors.black,
                               ),

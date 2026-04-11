@@ -20,6 +20,8 @@ class QuestionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final hasNetworkAvatar = _hasValidNetworkAvatar(question.userAvatar);
+
     return Card(
       color: Colors.white,
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -73,8 +75,20 @@ class QuestionCard extends StatelessWidget {
                     child: Row(
                       children: [
                         CircleAvatar(
-                          backgroundImage: NetworkImage(question.userAvatar),
                           radius: 16,
+                          backgroundColor: const Color(0xFFEAF1FF),
+                          backgroundImage: hasNetworkAvatar
+                              ? NetworkImage(question.userAvatar)
+                              : null,
+                          child: hasNetworkAvatar
+                              ? null
+                              : Text(
+                                  _avatarFallback(question.userName),
+                                  style: const TextStyle(
+                                    color: Color(0xFF2E6BFF),
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
                         ),
                         const SizedBox(width: 8),
                         Expanded(
@@ -153,6 +167,18 @@ class QuestionCard extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  bool _hasValidNetworkAvatar(String? raw) {
+    if (raw == null || raw.trim().isEmpty) return false;
+    final uri = Uri.tryParse(raw.trim());
+    return uri != null && (uri.scheme == 'http' || uri.scheme == 'https');
+  }
+
+  String _avatarFallback(String name) {
+    final trimmed = name.trim();
+    if (trimmed.isEmpty) return 'U';
+    return trimmed[0].toUpperCase();
   }
 }
 

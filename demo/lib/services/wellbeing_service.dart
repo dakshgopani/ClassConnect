@@ -41,7 +41,10 @@ class WellbeingService {
             .where('classId', isEqualTo: classId)
             .get();
         for (final doc in csSnap.docs) {
-          studentIds.add(doc['studentId']);
+          final data = doc.data() as Map<String, dynamic>;
+          if (data.containsKey('studentId')) {
+            studentIds.add(data['studentId']);
+          }
         }
       }
 
@@ -96,8 +99,9 @@ class WellbeingService {
       List<double> quizScores = [];
       if (quizSnap.docs.isNotEmpty) {
         for (final q in quizSnap.docs) {
-          final score = q['score'] as num?;
-          final total = q['total'] as num?;
+          final data = q.data() as Map<String, dynamic>;
+          final score = data['score'] as num?;
+          final total = data['total'] as num?;
           if (score != null && total != null && total != 0) {
             quizScores.add((score / total) * 100);
           }
@@ -116,10 +120,11 @@ class WellbeingService {
       int presentCount = 0;
       int totalSessions = 0;
       for (final att in attendanceSnap.docs) {
+        final data = att.data() as Map<String, dynamic>;
         final presentIds =
-            att['presentStudentIds'] as List<dynamic>? ?? [];
+            data['presentStudentIds'] as List<dynamic>? ?? [];
         final absentIds =
-            att['absentStudentIds'] as List<dynamic>? ?? [];
+            data['absentStudentIds'] as List<dynamic>? ?? [];
         if (presentIds.contains(studentId) ||
             absentIds.contains(studentId)) {
           totalSessions++;
@@ -320,9 +325,10 @@ class WellbeingService {
           .limit(30)
           .get();
 
-      return snapshots.docs
-          .map((d) => (d['score'] as num?)?.toDouble() ?? 50)
-          .toList()
+      return snapshots.docs.map((d) {
+        final data = d.data() as Map<String, dynamic>;
+        return (data['score'] as num?)?.toDouble() ?? 50.0;
+      }).toList()
           .reversed
           .toList();
     } catch (_) {

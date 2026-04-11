@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:demo/widgets/ui/cc_loading_animation.dart';
 
 class LoadingWidget extends StatelessWidget {
   final String message;
@@ -11,7 +12,7 @@ class LoadingWidget extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const CircularProgressIndicator(),
+          const CcLoadingAnimation(size: 56),
           const SizedBox(height: 16),
           Text(message, style: Theme.of(context).textTheme.bodyMedium),
         ],

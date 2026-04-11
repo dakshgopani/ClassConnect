@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:demo/widgets/ui/cc_loading_animation.dart';
 import 'package:flutter/services.dart';
 
 import '../services/teacher_task_service.dart';
@@ -1079,7 +1080,7 @@ class _PlanWorkloadScreenState extends State<PlanWorkloadScreen>
             ? const SizedBox(
                 width: 22,
                 height: 22,
-                child: CircularProgressIndicator(
+                child: CcLoadingAnimation(
                   color: Color(0xFF0D1B3D),
                   strokeWidth: 2.5,
                 ),

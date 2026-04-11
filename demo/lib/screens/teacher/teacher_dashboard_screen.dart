@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:demo/widgets/ui/cc_loading_animation.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -28,6 +29,8 @@ class _TeacherDashboardPageState extends State<TeacherDashboardPage>
   // Dashboard Data
   List<Map<String, dynamic>> students = [];
   late List<Map<String, dynamic>> _filteredStudents;
+  List<Map<String, String>> _teacherClasses = [];
+  String _selectedClassId = 'all';
 
   int _totalClasses = 0;
   int _totalPBLs = 0;
@@ -98,6 +101,17 @@ class _TeacherDashboardPageState extends State<TeacherDashboardPage>
         .get();
 
     _totalClasses = classesSnapshot.docs.length;
+    _teacherClasses = classesSnapshot.docs
+        .map(
+          (d) => {
+            'id': d.id,
+            'name':
+                (d.data()['class_name'] as String?)?.trim().isNotEmpty == true
+                ? d.data()['class_name'] as String
+                : 'Class ${d.id.substring(0, 6)}',
+          },
+        )
+        .toList();
     _totalPBLs = 0;
 
     for (var classDoc in classesSnapshot.docs) {
@@ -113,8 +127,12 @@ class _TeacherDashboardPageState extends State<TeacherDashboardPage>
         .get();
 
     final classIds = classesSnapshot.docs.map((d) => d.id).toList();
+    final classNamesById = {
+      for (final c in classesSnapshot.docs)
+        c.id: (c.data()['class_name'] as String?) ?? 'Untitled Class',
+    };
 
-    Set<String> studentIds = {};
+    final Map<String, Set<String>> studentClassIds = {};
     for (final classId in classIds) {
       final classStudentsSnapshot = await _firestore
           .collection('class_students')
@@ -122,9 +140,13 @@ class _TeacherDashboardPageState extends State<TeacherDashboardPage>
           .get();
 
       for (final doc in classStudentsSnapshot.docs) {
-        studentIds.add(doc['studentId']);
+        final sid = doc['studentId'] as String;
+        studentClassIds.putIfAbsent(sid, () => <String>{});
+        studentClassIds[sid]!.add(classId);
       }
     }
+
+    final studentIds = studentClassIds.keys.toSet();
 
     List<Map<String, dynamic>> loadedStudents = [];
     double totalQuiz = 0;
@@ -220,6 +242,10 @@ class _TeacherDashboardPageState extends State<TeacherDashboardPage>
         'id': studentId,
         'name': studentData['name'] ?? 'Unknown',
         'email': studentData['email'] ?? '',
+        'classIds': studentClassIds[studentId]?.toList() ?? <String>[],
+        'classNames': (studentClassIds[studentId] ?? <String>{})
+            .map((id) => classNamesById[id] ?? 'Unknown Class')
+            .toList(),
         'quiz_score': avgQuizScore,
         'attendance': attendancePercentage,
         'xp': xp,
@@ -236,8 +262,8 @@ class _TeacherDashboardPageState extends State<TeacherDashboardPage>
 
     setState(() {
       students = loadedStudents;
-      _filteredStudents = List.from(students);
     });
+    _applyFilters();
   }
 
   Future<void> _fetchWeakConcepts(String teacherId) async {
@@ -288,20 +314,47 @@ class _TeacherDashboardPageState extends State<TeacherDashboardPage>
     _weakConcepts = _weakConcepts.take(8).toList();
   }
 
-  void _filterStudents(String query) {
+  void _applyFilters() {
+    final query = _searchController.text.trim().toLowerCase();
+    final selectedClassId = _selectedClassId;
+
+    final filtered = students.where((student) {
+      final classIds =
+          (student['classIds'] as List<dynamic>? ?? const <dynamic>[])
+              .map((e) => e.toString())
+              .toList();
+
+      final matchesClass =
+          selectedClassId == 'all' || classIds.contains(selectedClassId);
+      if (!matchesClass) return false;
+
+      if (query.isEmpty) return true;
+
+      final name = (student['name'] as String? ?? '').toLowerCase();
+      final email = (student['email'] as String? ?? '').toLowerCase();
+      return name.contains(query) || email.contains(query);
+    }).toList();
+
+    if (!mounted) return;
     setState(() {
-      if (query.trim().isEmpty) {
-        _filteredStudents = List.from(students);
-      } else {
-        _filteredStudents = students
-            .where(
-              (student) => (student['name'] as String).toLowerCase().contains(
-                query.toLowerCase(),
-              ),
-            )
-            .toList();
-      }
+      _filteredStudents = filtered;
     });
+  }
+
+  void _filterStudents(String _) => _applyFilters();
+
+  void _onClassFilterChanged(String? classId) {
+    if (classId == null) return;
+    setState(() => _selectedClassId = classId);
+    _applyFilters();
+  }
+
+  List<StudentWellbeing> _visibleWellbeing() {
+    if (_selectedClassId == 'all') return _wellbeingData;
+    final visibleIds = _filteredStudents.map((s) => s['id'] as String).toSet();
+    return _wellbeingData
+        .where((w) => visibleIds.contains(w.studentId))
+        .toList();
   }
 
   List<Map<String, dynamic>> _getTopPerformers() {
@@ -364,14 +417,7 @@ class _TeacherDashboardPageState extends State<TeacherDashboardPage>
           child: Center(
             child: Column(
               mainAxisSize: MainAxisSize.min,
-              children: [
-                CircularProgressIndicator(color: Color(0xFF2E6BFF)),
-                SizedBox(height: 16),
-                Text(
-                  'Loading dashboard...',
-                  style: TextStyle(color: Color(0xFF5C6B8C), fontSize: 14),
-                ),
-              ],
+              children: [CcLoadingAnimation(color: Color(0xFF2E6BFF))],
             ),
           ),
         ),
@@ -489,57 +535,109 @@ class _TeacherDashboardPageState extends State<TeacherDashboardPage>
   // =================== HEADER ===================
 
   Widget _buildHeader(String teacherName) {
-    return Row(
+    return Column(
       children: [
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Welcome Back',
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w500,
-                  color: const Color(0xFF5C6B8C).withValues(alpha: 0.8),
-                ),
+        Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Welcome Back',
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500,
+                      color: const Color(0xFF5C6B8C).withValues(alpha: 0.8),
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    teacherName,
+                    style: const TextStyle(
+                      fontSize: 26,
+                      fontWeight: FontWeight.w800,
+                      color: Color(0xFF0D1B3D),
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(height: 4),
-              Text(
-                teacherName,
-                style: const TextStyle(
-                  fontSize: 26,
-                  fontWeight: FontWeight.w800,
-                  color: Color(0xFF0D1B3D),
+            ),
+            Container(
+              decoration: BoxDecoration(
+                color: const Color(0xFF2E6BFF).withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: IconButton(
+                icon: const Icon(
+                  Icons.refresh_rounded,
+                  color: Color(0xFF2E6BFF),
+                ),
+                onPressed: _loadDashboardData,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        _buildClassFilter(),
+      ],
+    );
+  }
+
+  Widget _buildClassFilter() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0x1A2E6BFF)),
+      ),
+      child: Theme(
+        data: Theme.of(context).copyWith(
+          splashColor: const Color(0xFF2E6BFF).withValues(alpha: 0.10),
+          highlightColor: const Color(0xFF2E6BFF).withValues(alpha: 0.10),
+          hoverColor: const Color(0xFF2E6BFF).withValues(alpha: 0.08),
+          focusColor: const Color(0xFF2E6BFF).withValues(alpha: 0.10),
+        ),
+        child: DropdownButtonHideUnderline(
+          child: DropdownButton<String>(
+            value: _selectedClassId,
+            isExpanded: true,
+            dropdownColor: Colors.white,
+            icon: const Icon(
+              Icons.keyboard_arrow_down_rounded,
+              color: Color(0xFF2E6BFF),
+            ),
+            style: const TextStyle(color: Color(0xFF0D1B3D), fontSize: 14),
+            items: [
+              const DropdownMenuItem<String>(
+                value: 'all',
+                child: Text('All classes'),
+              ),
+              ..._teacherClasses.map(
+                (c) => DropdownMenuItem<String>(
+                  value: c['id']!,
+                  child: Text(c['name']!),
                 ),
               ),
             ],
+            onChanged: _onClassFilterChanged,
           ),
         ),
-        // Refresh button
-        Container(
-          decoration: BoxDecoration(
-            color: const Color(0xFF2E6BFF).withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: IconButton(
-            icon: const Icon(Icons.refresh_rounded, color: Color(0xFF2E6BFF)),
-            onPressed: _loadDashboardData,
-          ),
-        ),
-      ],
+      ),
     );
   }
 
   // =================== QUICK STATS ===================
 
   Widget _buildQuickStatsGrid() {
-    final avgAttendance = _calculateAverage('attendance');
+    final visibleAtRisk = _visibleWellbeing().where((w) => w.isAtRisk).length;
     return Row(
       children: [
         Expanded(
           child: _quickStatCard(
             'Classes',
-            _totalClasses.toString(),
+            (_selectedClassId == 'all' ? _totalClasses : 1).toString(),
             Icons.class_rounded,
             const Color(0xFF2E6BFF),
           ),
@@ -548,7 +646,7 @@ class _TeacherDashboardPageState extends State<TeacherDashboardPage>
         Expanded(
           child: _quickStatCard(
             'Students',
-            students.length.toString(),
+            _filteredStudents.length.toString(),
             Icons.people_rounded,
             const Color(0xFF6BCB77),
           ),
@@ -557,7 +655,7 @@ class _TeacherDashboardPageState extends State<TeacherDashboardPage>
         Expanded(
           child: _quickStatCard(
             'Avg Score',
-            '${_avgQuizScore.toStringAsFixed(0)}%',
+            '${_calculateAverage('quiz_score').toStringAsFixed(0)}%',
             Icons.trending_up_rounded,
             const Color(0xFFFF9F43),
           ),
@@ -566,9 +664,9 @@ class _TeacherDashboardPageState extends State<TeacherDashboardPage>
         Expanded(
           child: _quickStatCard(
             'At Risk',
-            _atRiskStudents.length.toString(),
+            visibleAtRisk.toString(),
             Icons.warning_amber_rounded,
-            _atRiskStudents.isEmpty
+            visibleAtRisk == 0
                 ? const Color(0xFF6BCB77)
                 : const Color(0xFFFF4757),
           ),
@@ -780,6 +878,9 @@ class _TeacherDashboardPageState extends State<TeacherDashboardPage>
   // =================== WELLBEING TAB ===================
 
   Widget _buildWellbeingTab() {
+    final visibleWellbeing = _visibleWellbeing();
+    final visibleAtRisk = visibleWellbeing.where((w) => w.isAtRisk).toList();
+
     return RefreshIndicator(
       color: const Color(0xFF2E6BFF),
       onRefresh: _loadDashboardData,
@@ -796,9 +897,9 @@ class _TeacherDashboardPageState extends State<TeacherDashboardPage>
           const SizedBox(height: 24),
 
           // At-Risk Students
-          if (_atRiskStudents.isNotEmpty) ...[
-            _sectionTitle('At-Risk Students (${_atRiskStudents.length})'),
-            ..._atRiskStudents.map(_buildAtRiskCard),
+          if (visibleAtRisk.isNotEmpty) ...[
+            _sectionTitle('At-Risk Students (${visibleAtRisk.length})'),
+            ...visibleAtRisk.map(_buildAtRiskCard),
             const SizedBox(height: 24),
           ],
 
@@ -812,17 +913,18 @@ class _TeacherDashboardPageState extends State<TeacherDashboardPage>
   }
 
   Widget _buildWellbeingSummary() {
-    final avgScore = _wellbeingData.isEmpty
+    final visibleWellbeing = _visibleWellbeing();
+    final avgScore = visibleWellbeing.isEmpty
         ? 0.0
-        : _wellbeingData.fold<double>(0, (s, w) => s + w.wellbeingScore) /
-              _wellbeingData.length;
-    final highRisk = _wellbeingData
+        : visibleWellbeing.fold<double>(0, (s, w) => s + w.wellbeingScore) /
+              visibleWellbeing.length;
+    final highRisk = visibleWellbeing
         .where((w) => w.riskLevel == RiskLevel.high)
         .length;
-    final medRisk = _wellbeingData
+    final medRisk = visibleWellbeing
         .where((w) => w.riskLevel == RiskLevel.medium)
         .length;
-    final lowRisk = _wellbeingData
+    final lowRisk = visibleWellbeing
         .where((w) => w.riskLevel == RiskLevel.low)
         .length;
 
@@ -910,7 +1012,9 @@ class _TeacherDashboardPageState extends State<TeacherDashboardPage>
   }
 
   Widget _buildWellbeingTrendChart() {
-    if (_wellbeingData.isEmpty) {
+    final visibleWellbeing = _visibleWellbeing();
+
+    if (visibleWellbeing.isEmpty) {
       return const Center(
         child: Text(
           'No wellbeing data yet',
@@ -921,7 +1025,7 @@ class _TeacherDashboardPageState extends State<TeacherDashboardPage>
 
     // Use the longest available trend
     List<double>? longestTrend;
-    for (final wb in _wellbeingData) {
+    for (final wb in visibleWellbeing) {
       if (wb.trendScores.length > (longestTrend?.length ?? 0)) {
         longestTrend = wb.trendScores;
       }
@@ -929,7 +1033,7 @@ class _TeacherDashboardPageState extends State<TeacherDashboardPage>
 
     // If no historical data, create from current scores
     if (longestTrend == null || longestTrend.isEmpty) {
-      longestTrend = _wellbeingData.map((w) => w.wellbeingScore).toList();
+      longestTrend = visibleWellbeing.map((w) => w.wellbeingScore).toList();
     }
 
     final spots = List.generate(
@@ -1243,7 +1347,7 @@ class _TeacherDashboardPageState extends State<TeacherDashboardPage>
                           child: SizedBox(
                             width: 24,
                             height: 24,
-                            child: CircularProgressIndicator(
+                            child: CcLoadingAnimation(
                               strokeWidth: 2,
                               color: Color(0xFF2E6BFF),
                             ),
@@ -1524,7 +1628,9 @@ class _TeacherDashboardPageState extends State<TeacherDashboardPage>
   // =================== ALL WELLBEING LIST ===================
 
   Widget _buildAllWellbeingList() {
-    if (_wellbeingData.isEmpty) {
+    final visibleWellbeing = _visibleWellbeing();
+
+    if (visibleWellbeing.isEmpty) {
       return const Center(
         child: Padding(
           padding: EdgeInsets.all(20),
@@ -1537,7 +1643,7 @@ class _TeacherDashboardPageState extends State<TeacherDashboardPage>
     }
 
     return Column(
-      children: _wellbeingData.map((wb) {
+      children: visibleWellbeing.map((wb) {
         final riskColor = _riskColor(wb.riskLevel);
         return Padding(
           padding: const EdgeInsets.only(bottom: 8),

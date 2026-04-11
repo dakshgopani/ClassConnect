@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:demo/widgets/ui/cc_loading_animation.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -286,7 +287,7 @@ class _TeacherResourcesScreenState extends State<TeacherResourcesScreen> {
                                         ? const SizedBox(
                                             width: 20,
                                             height: 20,
-                                            child: CircularProgressIndicator(
+                                            child: CcLoadingAnimation(
                                               strokeWidth: 2,
                                               color: Colors.white,
                                             ),
@@ -404,7 +405,7 @@ class _TeacherResourcesScreenState extends State<TeacherResourcesScreen> {
                                         ? const SizedBox(
                                             width: 20,
                                             height: 20,
-                                            child: CircularProgressIndicator(
+                                            child: CcLoadingAnimation(
                                               strokeWidth: 2,
                                               color: Colors.white,
                                             ),
@@ -526,7 +527,7 @@ class _TeacherResourcesScreenState extends State<TeacherResourcesScreen> {
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
                   return const Center(
-                    child: CircularProgressIndicator(color: Color(0xFF2E6BFF)),
+                    child: CcLoadingAnimation(color: Color(0xFF2E6BFF)),
                   );
                 }
 

@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:demo/widgets/ui/cc_loading_animation.dart';
 import 'package:demo/screens/student/resources/student_resources_screen.dart';
 import 'package:demo/screens/student/pbl/student_pbl_selection_screen.dart';
 import 'package:demo/screens/student/student_class_detail_screen.dart';
@@ -495,7 +496,7 @@ class _StudentActivityScreenState extends State<StudentActivityScreen> {
             SizedBox(
               width: 36,
               height: 36,
-              child: CircularProgressIndicator(strokeWidth: 3),
+              child: CcLoadingAnimation(strokeWidth: 3),
             ),
             SizedBox(height: 16),
             Text(

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:demo/widgets/ui/cc_loading_animation.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../../services/gemini_quiz_service.dart';
 
@@ -151,6 +152,9 @@ class _QuizDetailScreenState extends State<QuizDetailScreen> {
           'type': 'chapter_quiz',
           'chapterId': widget.conceptId,
           'chapterName': widget.conceptName,
+          'title': 'Quiz: ${widget.conceptName}',
+          'message':
+              'A new chapter quiz is now live. Attempt before the deadline.',
           'classId': widget.classId,
           'publishedAt': Timestamp.fromDate(now),
           'deadline': Timestamp.fromDate(now.add(const Duration(days: 7))),
@@ -234,7 +238,7 @@ class _QuizDetailScreenState extends State<QuizDetailScreen> {
                         ? const SizedBox(
                             width: 16,
                             height: 16,
-                            child: CircularProgressIndicator(
+                            child: CcLoadingAnimation(
                               strokeWidth: 2,
                               color: Colors.white,
                             ),
@@ -306,7 +310,7 @@ class _QuizDetailScreenState extends State<QuizDetailScreen> {
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
                   return const Center(
-                    child: CircularProgressIndicator(color: Color(0xFF2E6BFF)),
+                    child: CcLoadingAnimation(color: Color(0xFF2E6BFF)),
                   );
                 }
 

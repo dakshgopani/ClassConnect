@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:demo/widgets/ui/cc_loading_animation.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:demo/widgets/ui/cc_decorated_background.dart';
@@ -32,7 +33,7 @@ class StudentClassesPage extends StatelessWidget {
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(
-              child: CircularProgressIndicator(color: Color(0xFF00D9FF)),
+              child: CcLoadingAnimation(color: Color(0xFF2E6BFF)),
             );
           }
 
@@ -58,7 +59,7 @@ class StudentClassesPage extends StatelessWidget {
             builder: (context, classSnapshot) {
               if (classSnapshot.connectionState == ConnectionState.waiting) {
                 return const Center(
-                  child: CircularProgressIndicator(color: Color(0xFF00D9FF)),
+                  child: CcLoadingAnimation(color: Color(0xFF2E6BFF)),
                 );
               }
 
@@ -138,7 +139,7 @@ class StudentClassesPage extends StatelessWidget {
                 child: Icon(
                   Icons.school_rounded,
                   size: 100,
-                  color: const Color(0xFF00D9FF).withValues(alpha: 0.08),
+                  color: const Color(0xFF2E6BFF).withValues(alpha: 0.10),
                 ),
               ),
               Padding(
@@ -150,7 +151,7 @@ class StudentClassesPage extends StatelessWidget {
                       width: 4,
                       height: 60,
                       decoration: BoxDecoration(
-                        color: const Color(0xFF00D9FF),
+                        color: const Color(0xFF2E6BFF),
                         borderRadius: BorderRadius.circular(10),
                       ),
                     ),
@@ -245,24 +246,24 @@ class StudentClassesPage extends StatelessWidget {
           decoration: BoxDecoration(
             gradient: LinearGradient(
               colors: [
-                const Color(0xFF00D9FF).withValues(alpha: 0.15),
-                const Color(0xFF00D9FF).withValues(alpha: 0.05),
+                const Color(0xFF2E6BFF).withValues(alpha: 0.15),
+                const Color(0xFF2E6BFF).withValues(alpha: 0.05),
               ],
             ),
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
-              color: const Color(0xFF00D9FF).withValues(alpha: 0.4),
+              color: const Color(0xFF2E6BFF).withValues(alpha: 0.4),
             ),
           ),
           child: const Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.auto_awesome_motion_rounded, color: Color(0xFF00D9FF)),
+              Icon(Icons.auto_awesome_motion_rounded, color: Color(0xFF2E6BFF)),
               SizedBox(width: 12),
               Text(
                 "Explore Project Templates",
                 style: TextStyle(
-                  color: Color(0xFF00D9FF),
+                  color: Color(0xFF2E6BFF),
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
                 ),

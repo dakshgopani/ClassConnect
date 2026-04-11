@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:demo/widgets/ui/cc_loading_animation.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../../services/gemini_text_validation_service.dart';
 
@@ -244,7 +245,7 @@ class _ConceptValidationScreenState extends State<ConceptValidationScreen> {
                     ? const SizedBox(
                         height: 20,
                         width: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2),
+                        child: CcLoadingAnimation(strokeWidth: 2),
                       )
                     : const Text("Submit Validation"),
               ),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:demo/widgets/ui/cc_loading_animation.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'quiz_detail_screen.dart';
 
@@ -10,40 +11,67 @@ class QuizTabScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF4F8FF), // Deep Blue Background
-      body: StreamBuilder<QuerySnapshot>(
-        stream: FirebaseFirestore.instance
-            .collection('classes')
-            .doc(classId)
-            .collection('chapters')
-            .orderBy('order')
-            .snapshots(),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(
-              child: CircularProgressIndicator(color: Color(0xFF2E6BFF)),
-            );
-          }
-
-          if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-            return _buildEmptyState(context);
-          }
-
-          final chapters = snapshot.data!.docs;
-
-          return ListView.builder(
-            padding: const EdgeInsets.all(16),
-            itemCount: chapters.length,
-            itemBuilder: (context, index) {
-              final chapterDoc = chapters[index];
-              return _ChapterCard(
-                classId: classId,
-                chapterDoc: chapterDoc,
-                index: index,
+      backgroundColor: const Color(0xFFF4F8FF),
+      body: SafeArea(
+        child: StreamBuilder<QuerySnapshot>(
+          stream: FirebaseFirestore.instance
+              .collection('classes')
+              .doc(classId)
+              .collection('chapters')
+              .orderBy('order')
+              .snapshots(),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Center(
+                child: CcLoadingAnimation(color: Color(0xFF2E6BFF)),
               );
-            },
-          );
-        },
+            }
+
+            if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+              return _buildEmptyState(context);
+            }
+
+            final chapters = snapshot.data!.docs;
+
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Padding(
+                  padding: EdgeInsets.fromLTRB(16, 8, 16, 6),
+                  child: Text(
+                    'Smart Quiz Chapters',
+                    style: TextStyle(
+                      color: Color(0xFF0D1B3D),
+                      fontSize: 20,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+                const Padding(
+                  padding: EdgeInsets.fromLTRB(16, 0, 16, 12),
+                  child: Text(
+                    'Manage chapter-wise quizzes with cleaner progress tracking.',
+                    style: TextStyle(color: Color(0xFF5C6B8C), fontSize: 13),
+                  ),
+                ),
+                Expanded(
+                  child: ListView.builder(
+                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+                    itemCount: chapters.length,
+                    itemBuilder: (context, index) {
+                      final chapterDoc = chapters[index];
+                      return _ChapterCard(
+                        classId: classId,
+                        chapterDoc: chapterDoc,
+                        index: index,
+                      );
+                    },
+                  ),
+                ),
+              ],
+            );
+          },
+        ),
       ),
     );
   }

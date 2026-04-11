@@ -8,6 +8,7 @@ import 'package:demo/services/auth_service.dart';
 import 'package:demo/widgets/ui/cc_button.dart';
 import 'package:demo/widgets/ui/cc_text_field.dart';
 import 'package:flutter/material.dart';
+import 'package:demo/widgets/ui/cc_loading_animation.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -320,7 +321,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           ? const SizedBox(
                               width: 18,
                               height: 18,
-                              child: CircularProgressIndicator(
+                              child: CcLoadingAnimation(
                                 color: Colors.white,
                                 strokeWidth: 2,
                               ),

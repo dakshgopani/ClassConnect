@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:demo/widgets/ui/cc_loading_animation.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../../services/gemini_video_validation_service.dart';
@@ -281,7 +282,7 @@ examples, and why it is important.
               child: ElevatedButton(
                 onPressed: uploading ? null : submitVideo,
                 child: uploading
-                    ? const CircularProgressIndicator()
+                    ? const CcLoadingAnimation()
                     : const Text("Submit Video"),
               ),
             ),

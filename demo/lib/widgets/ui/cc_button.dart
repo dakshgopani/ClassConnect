@@ -1,4 +1,5 @@
 import 'package:demo/theme/app_radius.dart';
+import 'package:demo/widgets/ui/cc_loading_animation.dart';
 import 'package:flutter/material.dart';
 
 enum CcButtonVariant { primary, secondary, ghost }
@@ -57,14 +58,7 @@ class CcButton extends StatelessWidget {
           ),
         ),
         child: isLoading
-            ? const SizedBox(
-                width: 18,
-                height: 18,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  color: Colors.white,
-                ),
-              )
+            ? const CcLoadingAnimation(size: 18, color: Colors.white)
             : Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 mainAxisSize: MainAxisSize.min,

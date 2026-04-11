@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'practice_concept_list_screen.dart';
+import 'package:demo/theme/app_colors.dart';
+import 'package:demo/theme/app_spacing.dart';
+import 'package:demo/widgets/ui/cc_button.dart';
+import 'package:demo/widgets/ui/cc_card.dart';
+import 'package:demo/widgets/ui/cc_section_header.dart';
 import 'student_class_detail_screen.dart';
 import '../../services/global_xp_service.dart';
 import '../../services/class_xp_service.dart';
@@ -141,18 +145,23 @@ class _StudentQuizAttemptScreenState extends State<StudentQuizAttemptScreen> {
       context: context,
       barrierDismissible: false,
       builder: (_) => AlertDialog(
-        backgroundColor: const Color(0xFF1E2E52),
+        backgroundColor: AppColors.surface,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: const Text(
-          "Improve Your Learning 💡",
-          style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
+          'Improve Your Learning',
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            color: AppColors.textPrimary,
+          ),
         ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(
-              "You need more practice in these concepts:",
-              style: TextStyle(color: Colors.white.withOpacity(0.8)),
+              'You need more practice in these concepts:',
+              style: TextStyle(
+                color: AppColors.textMuted.withValues(alpha: 0.95),
+              ),
             ),
             const SizedBox(height: 12),
             ...weakConcepts.map(
@@ -162,7 +171,7 @@ class _StudentQuizAttemptScreenState extends State<StudentQuizAttemptScreen> {
                   children: [
                     const Icon(
                       Icons.warning_amber_rounded,
-                      color: Colors.orange,
+                      color: AppColors.warning,
                       size: 18,
                     ),
                     const SizedBox(width: 8),
@@ -171,7 +180,7 @@ class _StudentQuizAttemptScreenState extends State<StudentQuizAttemptScreen> {
                         c,
                         style: const TextStyle(
                           fontWeight: FontWeight.w600,
-                          color: Colors.white,
+                          color: AppColors.textPrimary,
                         ),
                       ),
                     ),
@@ -186,7 +195,10 @@ class _StudentQuizAttemptScreenState extends State<StudentQuizAttemptScreen> {
             onPressed: () {
               Navigator.pop(context); // ✅ closes dialog ONLY
             },
-            child: const Text("Later", style: TextStyle(color: Colors.white54)),
+            child: const Text(
+              'Later',
+              style: TextStyle(color: AppColors.textMuted),
+            ),
           ),
           ElevatedButton(
             onPressed: () {
@@ -203,11 +215,9 @@ class _StudentQuizAttemptScreenState extends State<StudentQuizAttemptScreen> {
                 ),
               );
             },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF3B82F6),
-            ),
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
             child: const Text(
-              "Practice Now",
+              'Practice Now',
               style: TextStyle(color: Colors.white),
             ),
           ),
@@ -221,24 +231,16 @@ class _StudentQuizAttemptScreenState extends State<StudentQuizAttemptScreen> {
   /// ============================================================
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Scaffold(
-      backgroundColor: const Color(0xFFF4F8FF),
+      backgroundColor: AppColors.background,
       appBar: AppBar(
-        backgroundColor: const Color(0xFFF4F8FF),
+        backgroundColor: AppColors.background,
+        foregroundColor: AppColors.textPrimary,
         elevation: 0,
-        title: const Text(
-          "Chapter Quiz",
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
+        title: const Text('Chapter Quiz'),
         leading: IconButton(
-          icon: const Icon(
-            Icons.arrow_back_ios_new_rounded,
-            color: Colors.white,
-          ),
+          icon: const Icon(Icons.arrow_back_ios_new_rounded),
           onPressed: () => Navigator.pop(context),
         ),
       ),
@@ -247,7 +249,7 @@ class _StudentQuizAttemptScreenState extends State<StudentQuizAttemptScreen> {
         builder: (context, snapshot) {
           if (!snapshot.hasData) {
             return const Center(
-              child: CircularProgressIndicator(color: Colors.white30),
+              child: CircularProgressIndicator(color: AppColors.primary),
             );
           }
 
@@ -258,55 +260,44 @@ class _StudentQuizAttemptScreenState extends State<StudentQuizAttemptScreen> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Container(
-                    padding: const EdgeInsets.all(24),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF1E2E52),
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: Colors.white),
-                    ),
-                    child: Column(
-                      children: [
-                        Text(
-                          "Score: $score / ${questions.length}",
-                          style: const TextStyle(
-                            fontSize: 28,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                          ),
+                  CcCard(
+                    child: Container(
+                      width: 280,
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: AppColors.primary.withValues(alpha: 0.08),
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(
+                          color: AppColors.primary.withValues(alpha: 0.25),
                         ),
-                        const SizedBox(height: 8),
-                        Text(
-                          "${((score / questions.length) * 100).toStringAsFixed(1)}%",
-                          style: TextStyle(
-                            fontSize: 20,
-                            color: Colors.white.withOpacity(0.7),
+                      ),
+                      child: Column(
+                        children: [
+                          Text(
+                            'Score: $score / ${questions.length}',
+                            style: theme.textTheme.headlineMedium?.copyWith(
+                              color: AppColors.textPrimary,
+                            ),
                           ),
-                        ),
-                      ],
+                          const SizedBox(height: 8),
+                          Text(
+                            '${((score / questions.length) * 100).toStringAsFixed(1)}%',
+                            style: theme.textTheme.titleMedium?.copyWith(
+                              color: AppColors.textMuted,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
-                  const SizedBox(height: 30),
-                  ElevatedButton(
+                  const SizedBox(height: AppSpacing.xl),
+                  CcButton(
+                    label: 'Continue',
+                    icon: const Icon(
+                      Icons.arrow_forward_rounded,
+                      color: Colors.white,
+                    ),
                     onPressed: () => showWeakConceptPopup(context),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF3B82F6),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 32,
-                        vertical: 14,
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                    ),
-                    child: const Text(
-                      "Continue",
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                      ),
-                    ),
                   ),
                 ],
               ),
@@ -314,28 +305,27 @@ class _StudentQuizAttemptScreenState extends State<StudentQuizAttemptScreen> {
           }
 
           return ListView(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(AppSpacing.lg),
             children: [
+              const CcSectionHeader(
+                title: 'Answer All Questions',
+                subtitle:
+                    'Pick one option for each question before submitting.',
+              ),
+              const SizedBox(height: AppSpacing.lg),
               ...questions.map((q) {
                 final data = q.data() as Map<String, dynamic>;
-                return Container(
-                  margin: const EdgeInsets.only(bottom: 16),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF1E1E1E),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.white, width: 1),
-                  ),
+                return CcCard(
+                  padding: const EdgeInsets.all(AppSpacing.lg),
                   child: Padding(
-                    padding: const EdgeInsets.all(16),
+                    padding: const EdgeInsets.only(bottom: AppSpacing.sm),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
                           data['question'],
-                          style: const TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16,
-                            color: Colors.white,
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            color: AppColors.textPrimary,
                           ),
                         ),
                         const SizedBox(height: 16),
@@ -344,13 +334,13 @@ class _StudentQuizAttemptScreenState extends State<StudentQuizAttemptScreen> {
                             margin: const EdgeInsets.only(bottom: 8),
                             decoration: BoxDecoration(
                               color: answers[q.id] == opt
-                                  ? const Color(0xFF3B82F6).withOpacity(0.2)
-                                  : Colors.transparent,
+                                  ? AppColors.primary.withValues(alpha: 0.12)
+                                  : AppColors.surfaceAlt,
                               borderRadius: BorderRadius.circular(8),
                               border: Border.all(
                                 color: answers[q.id] == opt
-                                    ? const Color(0xFF3B82F6)
-                                    : Colors.white.withOpacity(0.2),
+                                    ? AppColors.primary
+                                    : AppColors.primary.withValues(alpha: 0.18),
                               ),
                             ),
                             child: RadioListTile<String>(
@@ -358,12 +348,11 @@ class _StudentQuizAttemptScreenState extends State<StudentQuizAttemptScreen> {
                               groupValue: answers[q.id],
                               title: Text(
                                 opt,
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 15,
+                                style: theme.textTheme.bodyLarge?.copyWith(
+                                  color: AppColors.textPrimary,
                                 ),
                               ),
-                              activeColor: const Color(0xFF3B82F6),
+                              activeColor: AppColors.primary,
                               onChanged: (v) {
                                 setState(() => answers[q.id] = v!);
                               },
@@ -376,28 +365,13 @@ class _StudentQuizAttemptScreenState extends State<StudentQuizAttemptScreen> {
                 );
               }),
               const SizedBox(height: 16),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: () => submitQuiz(questions),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF3B82F6),
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    elevation: 8,
-                    shadowColor: const Color(0xFF3B82F6).withOpacity(0.5),
-                  ),
-                  child: const Text(
-                    "Submit Quiz",
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                    ),
-                  ),
+              CcButton(
+                label: 'Submit Quiz',
+                icon: const Icon(
+                  Icons.check_circle_rounded,
+                  color: Colors.white,
                 ),
+                onPressed: () => submitQuiz(questions),
               ),
             ],
           );

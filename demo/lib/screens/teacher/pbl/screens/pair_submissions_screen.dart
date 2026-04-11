@@ -899,9 +899,9 @@ class _PairSubmissionsScreenState extends State<PairSubmissionsScreen> {
                       fontWeight: isCompleted || isNext
                           ? FontWeight.bold
                           : FontWeight.w500,
-                      color: isCompleted
-                          ? Colors.white
-                          : (isNext ? Colors.white : Colors.black38),
+                      color: isCompleted || isNext
+                          ? const Color(0xFF0D1B3D)
+                          : Colors.black38,
                     ),
                   ),
                 ),
@@ -1256,8 +1256,3 @@ class _PairSubmissionsScreenState extends State<PairSubmissionsScreen> {
     return '';
   }
 }
-
-
-
-
-

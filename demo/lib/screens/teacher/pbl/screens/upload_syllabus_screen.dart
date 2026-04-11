@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:demo/screens/teacher/pbl/services/gemini_service.dart';
 import 'package:flutter/material.dart';
+import 'package:demo/widgets/ui/cc_loading_animation.dart';
 import 'package:file_picker/file_picker.dart';
 
 import 'concept_review_screen.dart';
@@ -107,7 +108,7 @@ class _UploadSyllabusScreenState extends State<UploadSyllabusScreen> {
                 ),
                 child: Center(
                   child: loading
-                      ? const CircularProgressIndicator()
+                      ? const CcLoadingAnimation()
                       : Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [

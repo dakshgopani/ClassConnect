@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:demo/screens/teacher/pbl/services/gemini_service.dart';
 import 'package:flutter/material.dart';
+import 'package:demo/widgets/ui/cc_loading_animation.dart';
 
 class ProblemSelectionScreen extends StatefulWidget {
   final List<String> concepts;
@@ -115,7 +116,7 @@ class _ProblemSelectionScreenState extends State<ProblemSelectionScreen> {
                       color: const Color(0xFFF0F4FF),
                       shape: BoxShape.circle,
                     ),
-                    child: const CircularProgressIndicator(
+                    child: const CcLoadingAnimation(
                       color: const Color(0xFF2E6BFF),
                     ),
                   ),

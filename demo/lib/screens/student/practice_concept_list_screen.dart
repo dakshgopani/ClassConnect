@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:demo/theme/app_colors.dart';
+import 'package:demo/theme/app_spacing.dart';
+import 'package:demo/widgets/ui/cc_card.dart';
+import 'package:demo/widgets/ui/cc_section_header.dart';
 import 'practice_quiz_loader_screen.dart';
 
 class PracticeConceptListScreen extends StatelessWidget {
@@ -16,20 +20,17 @@ class PracticeConceptListScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     return Scaffold(
-      backgroundColor: const Color(0xFFF4F8FF),
+      backgroundColor: AppColors.background,
       appBar: AppBar(
-        backgroundColor: const Color(0xFFF4F8FF),
+        backgroundColor: AppColors.background,
+        foregroundColor: AppColors.textPrimary,
         elevation: 0,
-        title: const Text(
-          "Practice Weak Concepts",
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700),
-        ),
+        title: const Text('Practice Weak Concepts'),
         leading: IconButton(
-          icon: const Icon(
-            Icons.arrow_back_ios_new_rounded,
-            color: Colors.white,
-          ),
+          icon: const Icon(Icons.arrow_back_ios_new_rounded),
           onPressed: () {
             Navigator.pop(context);
           },
@@ -44,11 +45,20 @@ class PracticeConceptListScreen extends StatelessWidget {
             .snapshots(),
         builder: (context, snapshot) {
           if (!snapshot.hasData) {
-            return const Center(child: CircularProgressIndicator());
+            return const Center(
+              child: CircularProgressIndicator(color: AppColors.primary),
+            );
           }
 
           if (snapshot.data!.docs.isEmpty) {
-            return const Center(child: Text("No quiz attempts found"));
+            return Center(
+              child: Text(
+                'No quiz attempts found',
+                style: theme.textTheme.bodyLarge?.copyWith(
+                  color: AppColors.textMuted,
+                ),
+              ),
+            );
           }
 
           final Set<String> weakConcepts = {};
@@ -76,93 +86,112 @@ class PracticeConceptListScreen extends StatelessWidget {
           }
 
           if (weakConcepts.isEmpty) {
-            return const Center(child: Text("No weak concepts 🎉"));
+            return Center(
+              child: Text(
+                'No weak concepts',
+                style: theme.textTheme.titleMedium?.copyWith(
+                  color: AppColors.success,
+                ),
+              ),
+            );
           }
 
           final weakConceptList = weakConcepts.toList();
 
           return ListView.builder(
-            padding: const EdgeInsets.all(16),
-            itemCount: weakConceptList.length,
+            padding: const EdgeInsets.all(AppSpacing.lg),
+            itemCount: weakConceptList.length + 1,
             itemBuilder: (context, index) {
-              final concept = weakConceptList[index];
-              final mastery = masteryByConcept[concept];
+              if (index == 0) {
+                return const Padding(
+                  padding: EdgeInsets.only(bottom: AppSpacing.lg),
+                  child: CcSectionHeader(
+                    title: 'Targeted Practice',
+                    subtitle: 'Focus on weak concepts to improve mastery.',
+                  ),
+                );
+              }
 
+              final concept = weakConceptList[index - 1];
+              final mastery = masteryByConcept[concept];
               final bool validated =
                   mastery != null && mastery['validated'] == true;
-
               final int score = mastery != null
                   ? mastery['individualMasteryScore'] ?? 0
                   : 0;
 
-              return Card(
-                color: const Color(0xFF1E1E1E),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  side: BorderSide(color: Colors.white),
-                ),
-                margin: const EdgeInsets.only(bottom: 12),
-                child: ListTile(
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 12,
+              return Padding(
+                padding: const EdgeInsets.only(bottom: AppSpacing.md),
+                child: CcCard(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.lg,
+                    vertical: AppSpacing.md,
                   ),
-                  title: Text(
-                    concept,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w700,
-                      color: Colors.white,
+                  child: ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: Text(
+                      concept,
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        color: AppColors.textPrimary,
+                      ),
                     ),
-                  ),
-                  subtitle: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        validated
-                            ? "Mastered ($score%)"
-                            : "Needs Practice ($score%)",
-                        style: TextStyle(
-                          color: Colors.white.withOpacity(0.8),
-                          fontSize: 13,
-                        ),
+                    subtitle: Padding(
+                      padding: const EdgeInsets.only(top: AppSpacing.sm),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            validated
+                                ? 'Mastered ($score%)'
+                                : 'Needs Practice ($score%)',
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: AppColors.textMuted,
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(6),
+                            child: LinearProgressIndicator(
+                              value: score / 100,
+                              minHeight: 7,
+                              backgroundColor: AppColors.surfaceAlt,
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                validated
+                                    ? AppColors.success
+                                    : AppColors.warning,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
-                      const SizedBox(height: 6),
-                      LinearProgressIndicator(
-                        value: score / 100,
-                        minHeight: 6,
-                        backgroundColor: Colors.white.withOpacity(0.08),
-                        valueColor: AlwaysStoppedAnimation(
-                          validated ? Colors.greenAccent : Colors.orangeAccent,
-                        ),
-                      ),
-                    ],
-                  ),
-                  trailing: Icon(
-                    validated ? Icons.check_circle : Icons.play_circle_fill,
-                    color: validated ? Colors.greenAccent : Colors.cyanAccent,
-                  ),
-                  onTap: () {
-                    if (validated && score >= 80) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text("Concept already mastered 🎉"),
+                    ),
+                    trailing: Icon(
+                      validated ? Icons.check_circle : Icons.play_circle_fill,
+                      color: validated ? AppColors.success : AppColors.primary,
+                    ),
+                    onTap: () {
+                      if (validated && score >= 80) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Concept already mastered'),
+                          ),
+                        );
+                        return;
+                      }
+
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => PracticeQuizLoaderScreen(
+                            classId: classId,
+                            studentId: studentId,
+                            studentName: studentName,
+                            conceptName: concept,
+                          ),
                         ),
                       );
-                      return;
-                    }
-
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => PracticeQuizLoaderScreen(
-                          classId: classId,
-                          studentId: studentId,
-                          studentName: studentName,
-                          conceptName: concept,
-                        ),
-                      ),
-                    );
-                  },
+                    },
+                  ),
                 ),
               );
             },

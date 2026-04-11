@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:demo/widgets/ui/cc_loading_animation.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'dart:math';
 import 'package:fl_chart/fl_chart.dart';
@@ -58,7 +59,7 @@ class _PblDetailScreenState extends State<PblDetailScreen> {
           }
 
           if (!snapshot.hasData) {
-            return const Center(child: CircularProgressIndicator());
+            return const Center(child: CcLoadingAnimation());
           }
 
           final pblData = snapshot.data!.data() as Map<String, dynamic>? ?? {};

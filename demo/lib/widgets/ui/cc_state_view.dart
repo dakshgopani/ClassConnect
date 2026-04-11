@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:demo/widgets/ui/cc_loading_animation.dart';
 
 enum CcStateViewType { loading, empty, error }
 
@@ -37,7 +38,7 @@ class CcStateView extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             if (type == CcStateViewType.loading)
-              const CircularProgressIndicator()
+              const CcLoadingAnimation(size: 48)
             else
               Icon(icon, size: 46, color: theme.colorScheme.primary),
             const SizedBox(height: 12),

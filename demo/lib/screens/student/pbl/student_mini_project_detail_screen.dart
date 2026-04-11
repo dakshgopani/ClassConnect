@@ -1,11 +1,13 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:demo/widgets/ui/cc_loading_animation.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:demo/services/groq_service.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:path/path.dart' as path;
 import 'package:demo/widgets/ui/cc_decorated_background.dart';
+import 'package:demo/services/pbl_supabase_client.dart';
 
 class StudentMiniProjectDetailScreen extends StatefulWidget {
   final String classId;
@@ -177,7 +179,7 @@ class _StudentMiniProjectDetailScreenState
       // Web always has bytes. Mac/Windows usually path.
       // Supabase uploadBinary needs bytes or file.
 
-      final supabase = Supabase.instance.client;
+      final supabase = PblSupabaseClient.client;
       final uniqueName = '${DateTime.now().millisecondsSinceEpoch}_$fileName';
       final storagePath =
           'mini_projects/${widget.classId}/${widget.pblId}/${widget.studentId}/$uniqueName';
@@ -277,7 +279,7 @@ class _StudentMiniProjectDetailScreenState
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  CircularProgressIndicator(color: Colors.cyan),
+                  CcLoadingAnimation(color: _accent),
                   SizedBox(height: 16),
                   Text(
                     "Generating personalized guidelines...",
@@ -604,7 +606,7 @@ class _StudentMiniProjectDetailScreenState
                                           ? const SizedBox(
                                               width: 20,
                                               height: 20,
-                                              child: CircularProgressIndicator(
+                                              child: CcLoadingAnimation(
                                                 strokeWidth: 2,
                                                 color: Colors.black,
                                               ),
@@ -622,8 +624,8 @@ class _StudentMiniProjectDetailScreenState
                                         ),
                                       ),
                                       style: ElevatedButton.styleFrom(
-                                        backgroundColor: Colors.cyan,
-                                        foregroundColor: Colors.black,
+                                        backgroundColor: _accent,
+                                        foregroundColor: Colors.white,
                                         padding: const EdgeInsets.symmetric(
                                           vertical: 16,
                                         ),

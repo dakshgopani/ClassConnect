@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:demo/widgets/ui/cc_loading_animation.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../../services/gemini_quiz_service.dart';
 import 'student_practice_quiz_attempt_screen.dart';
@@ -71,7 +72,7 @@ class _PracticeQuizLoaderScreenState extends State<PracticeQuizLoaderScreen> {
   @override
   Widget build(BuildContext context) {
     if (loading) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+      return const Scaffold(body: Center(child: CcLoadingAnimation()));
     }
 
     return StudentPracticeQuizAttemptScreen(

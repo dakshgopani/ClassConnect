@@ -284,12 +284,21 @@ class _AttendanceMarkingScreenState extends State<AttendanceMarkingScreen> {
           .doc(studentId)
           .get(),
       builder: (context, snap) {
-        if (!snap.hasData || !snap.data!.exists) {
-          // Minimal placeholder
+        if (snap.connectionState == ConnectionState.waiting) {
+          // Minimal placeholder while loading
           return Container(
             height: 70,
-            margin: const EdgeInsets.only(bottom: 8),
+            margin: const EdgeInsets.only(bottom: 12),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.5),
+              borderRadius: BorderRadius.circular(12),
+            ),
           );
+        }
+
+        if (!snap.hasData || !snap.data!.exists) {
+          // Do not show any gap for non-existent students
+          return const SizedBox.shrink();
         }
 
         final data = snap.data!.data() as Map<String, dynamic>;

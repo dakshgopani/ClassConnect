@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:demo/widgets/ui/cc_loading_animation.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'screens/concept_review_screen.dart';
 import 'screens/pbl_detail_screen.dart';
@@ -112,7 +113,7 @@ class _PblMainScreenState extends State<PblMainScreen> {
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(
-              child: CircularProgressIndicator(color: Color(0xFF2E6BFF)),
+              child: CcLoadingAnimation(color: Color(0xFF2E6BFF)),
             );
           }
 

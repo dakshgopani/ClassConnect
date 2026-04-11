@@ -9,6 +9,7 @@ import 'package:demo/screens/teacher/pbl/pbl_main_screen.dart';
 import 'package:demo/screens/teacher/quiz/quiz_tab_screen.dart';
 import 'package:demo/screens/teacher/resources/teacher_resources_screen.dart';
 import 'assignment/create_assignment_screen.dart';
+import 'assignment/teacher_assignment_detail_screen.dart';
 
 class TeacherClassDetailScreen extends StatefulWidget {
   final String classId;
@@ -744,6 +745,11 @@ class _PostsTabState extends State<_PostsTab> {
     final attachmentName = data['attachmentName'] as String?;
     final publishedAt = data['publishedAt'] as Timestamp?;
 
+    final String postType = data['type'] as String? ?? 'announcement';
+    final String authorName = postType == 'student_post'
+        ? (data['studentName'] as String? ?? 'Student')
+        : 'Teacher';
+
     return Container(
       key: ValueKey('post_$postId'),
       margin: const EdgeInsets.only(bottom: 16),
@@ -783,9 +789,9 @@ class _PostsTabState extends State<_PostsTab> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      'Teacher',
-                      style: TextStyle(
+                    Text(
+                      authorName,
+                      style: const TextStyle(
                         color: Color(0xFF0D1B3D),
                         fontWeight: FontWeight.bold,
                         fontSize: 15,
@@ -1121,6 +1127,18 @@ class _AssignmentsTab extends StatelessWidget {
                           Icons.chevron_right,
                           color: const Color(0xFFA5B2C8),
                         ),
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => TeacherAssignmentDetailScreen(
+                                classId: classId,
+                                assignmentId: doc.id,
+                                assignmentData: data,
+                              ),
+                            ),
+                          );
+                        },
                       ),
                     );
                   },

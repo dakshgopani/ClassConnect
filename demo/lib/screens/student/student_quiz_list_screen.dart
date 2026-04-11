@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:demo/widgets/ui/cc_loading_animation.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'student_quiz_attempt_screen.dart';
@@ -32,7 +33,7 @@ class StudentQuizListScreen extends StatelessWidget {
             .snapshots(),
         builder: (context, studentSnap) {
           if (!studentSnap.hasData) {
-            return const Center(child: CircularProgressIndicator());
+            return const Center(child: CcLoadingAnimation());
           }
 
           if (!studentSnap.data!.exists) {
@@ -61,7 +62,7 @@ class StudentQuizListScreen extends StatelessWidget {
                       .snapshots(),
                   builder: (context, snapshot) {
                     if (!snapshot.hasData) {
-                      return const Center(child: CircularProgressIndicator());
+                      return const Center(child: CcLoadingAnimation());
                     }
 
                     final quizzes = snapshot.data!.docs;

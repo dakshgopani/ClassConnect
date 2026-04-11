@@ -1,6 +1,7 @@
 import 'package:demo/screens/teacher/pbl/models/pbl_project.dart';
 import 'package:demo/screens/teacher/pbl/services/gemini_service.dart';
 import 'package:flutter/material.dart';
+import 'package:demo/widgets/ui/cc_loading_animation.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'publish_success_screen.dart';
 
@@ -126,7 +127,7 @@ class _PblEditorScreenState extends State<PblEditorScreen> {
                 ),
                 child: const Row(
                   children: [
-                    CircularProgressIndicator(),
+                    CcLoadingAnimation(),
                     SizedBox(width: 16),
                     Expanded(
                       child: Text(
@@ -334,7 +335,7 @@ class _PblEditorScreenState extends State<PblEditorScreen> {
                   padding: const EdgeInsets.all(16),
                 ),
                 child: _isSaving
-                    ? const CircularProgressIndicator(color: Colors.white)
+                    ? const CcLoadingAnimation(color: Colors.white)
                     : Text(
                   isEditing ? 'Save Changes' : 'Publish Project to Class',
                   style: const TextStyle(fontSize: 18),

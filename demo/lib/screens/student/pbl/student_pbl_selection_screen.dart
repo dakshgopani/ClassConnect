@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:demo/widgets/ui/cc_loading_animation.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:demo/widgets/ui/cc_decorated_background.dart';
@@ -178,7 +179,7 @@ class _StudentPblSelectionScreenState extends State<StudentPblSelectionScreen> {
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting &&
                 _isLoading) {
-              return const Center(child: CircularProgressIndicator());
+              return const Center(child: CcLoadingAnimation());
             }
 
             final pblData = snapshot.data?.data() as Map<String, dynamic>?;
@@ -189,7 +190,7 @@ class _StudentPblSelectionScreenState extends State<StudentPblSelectionScreen> {
                 widget.miniProjects;
 
             if (_isLoading) {
-              return const Center(child: CircularProgressIndicator());
+              return const Center(child: CcLoadingAnimation());
             }
 
             return SingleChildScrollView(

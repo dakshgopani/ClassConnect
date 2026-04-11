@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:demo/widgets/ui/cc_loading_animation.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'teacher_class_detail_screen.dart';
 import 'package:demo/screens/teacher/pbl/pbl_main_screen.dart';
@@ -50,7 +51,7 @@ class _TeacherClassesPageState extends State<TeacherClassesPage> {
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(
-              child: CircularProgressIndicator(color: Color(0xFF00D9FF)),
+              child: CcLoadingAnimation(color: Color(0xFF2E6BFF)),
             );
           }
 
@@ -121,7 +122,7 @@ class _TeacherClassesPageState extends State<TeacherClassesPage> {
                 child: Icon(
                   Icons.school_rounded,
                   size: 100,
-                  color: const Color(0xFF00D9FF).withOpacity(0.03),
+                  color: const Color(0xFF2E6BFF).withOpacity(0.10),
                 ),
               ),
               Padding(
@@ -133,7 +134,7 @@ class _TeacherClassesPageState extends State<TeacherClassesPage> {
                       width: 4,
                       height: 60,
                       decoration: BoxDecoration(
-                        color: const Color(0xFF00D9FF),
+                        color: const Color(0xFF2E6BFF),
                         borderRadius: BorderRadius.circular(10),
                       ),
                     ),
@@ -246,7 +247,7 @@ class _TeacherClassesPageState extends State<TeacherClassesPage> {
         stream: _fetchClasses(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
+            return const Center(child: CcLoadingAnimation());
           }
 
           if (snapshot.hasError) {

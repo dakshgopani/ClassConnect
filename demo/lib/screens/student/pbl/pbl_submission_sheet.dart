@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:demo/widgets/ui/cc_loading_animation.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:file_picker/file_picker.dart';
@@ -10,6 +11,7 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:record/record.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:intl/intl.dart';
+import 'package:demo/services/pbl_supabase_client.dart';
 
 class PblSubmissionSheet extends StatefulWidget {
   final Map<String, dynamic> pblData;
@@ -293,7 +295,7 @@ class _PblSubmissionSheetState extends State<PblSubmissionSheet> {
           '${user.uid}/$pblId/$sanitizedMilestone/${DateTime.now().millisecondsSinceEpoch}_${_selectedFile!.name}';
 
       // 3. Upload to Supabase
-      final supabase = Supabase.instance.client;
+      final supabase = PblSupabaseClient.client;
       await supabase.storage
           .from('PBL - PROJECTS')
           .uploadBinary(
@@ -647,7 +649,7 @@ class _PblSubmissionSheetState extends State<PblSubmissionSheet> {
                 const Center(
                   child: Padding(
                     padding: EdgeInsets.all(20.0),
-                    child: CircularProgressIndicator(color: Colors.cyan),
+                    child: CcLoadingAnimation(color: _accent),
                   ),
                 )
               else
@@ -678,7 +680,7 @@ class _PblSubmissionSheetState extends State<PblSubmissionSheet> {
                           false; // "Lock" it so they can't re-submit while waiting
                     } else if (isUnlocked) {
                       subtitle = "Open for Submission";
-                      statusColor = Colors.cyanAccent;
+                      statusColor = _accent;
                     } else {
                       statusColor = Colors.grey.shade700;
                     }
@@ -767,10 +769,14 @@ class _PblSubmissionSheetState extends State<PblSubmissionSheet> {
                               margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
                               padding: const EdgeInsets.all(12),
                               decoration: BoxDecoration(
-                                color: Colors.green.withOpacity(0.1),
+                                color: const Color(
+                                  0xFF2E6BFF,
+                                ).withOpacity(0.08),
                                 borderRadius: BorderRadius.circular(8),
                                 border: Border.all(
-                                  color: Colors.green.withOpacity(0.3),
+                                  color: const Color(
+                                    0xFF2E6BFF,
+                                  ).withOpacity(0.28),
                                 ),
                               ),
                               child: Column(
@@ -781,13 +787,13 @@ class _PblSubmissionSheetState extends State<PblSubmissionSheet> {
                                       Icon(
                                         Icons.comment,
                                         size: 14,
-                                        color: Colors.greenAccent,
+                                        color: Color(0xFF2E6BFF),
                                       ),
                                       SizedBox(width: 6),
                                       Text(
                                         "Teacher Feedback:",
                                         style: TextStyle(
-                                          color: Colors.greenAccent,
+                                          color: Color(0xFF2E6BFF),
                                           fontSize: 12,
                                           fontWeight: FontWeight.bold,
                                         ),
@@ -1134,7 +1140,7 @@ class _PblSubmissionSheetState extends State<PblSubmissionSheet> {
                                 ? const SizedBox(
                                     width: 16,
                                     height: 16,
-                                    child: CircularProgressIndicator(
+                                    child: CcLoadingAnimation(
                                       strokeWidth: 2,
                                       color: Colors.black,
                                     ),

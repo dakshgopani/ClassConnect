@@ -1,5 +1,6 @@
 import 'package:demo/screens/student/attendance/student_attendance_screen.dart';
 import 'package:flutter/material.dart';
+import 'package:demo/widgets/ui/cc_loading_animation.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../services/gemini_diagnostic_service.dart';
@@ -76,7 +77,7 @@ class _StudentClassDetailScreenState extends State<StudentClassDetailScreen>
             return Container(
               color: const Color(0xFFF4F8FF),
               child: const Center(
-                child: CircularProgressIndicator(color: Color(0xFF2E6BFF)),
+                child: CcLoadingAnimation(color: Color(0xFF2E6BFF)),
               ),
             );
           }
@@ -95,7 +96,7 @@ class _StudentClassDetailScreenState extends State<StudentClassDetailScreen>
                 return Container(
                   color: const Color(0xFFF4F8FF),
                   child: const Center(
-                    child: CircularProgressIndicator(color: Color(0xFF2E6BFF)),
+                    child: CcLoadingAnimation(color: Color(0xFF2E6BFF)),
                   ),
                 );
               }
@@ -833,7 +834,7 @@ class _QuizSection extends StatelessWidget {
             // 🔄 Loading
             if (snapshot.connectionState == ConnectionState.waiting) {
               return const Center(
-                child: CircularProgressIndicator(color: Color(0xFF7A89A8)),
+                child: CcLoadingAnimation(color: Color(0xFF7A89A8)),
               );
             }
 
@@ -1145,7 +1146,7 @@ class _PostsTabState extends State<_PostsTab> {
                   .snapshots(),
               builder: (context, snapshot) {
                 if (!snapshot.hasData) {
-                  return const Center(child: CircularProgressIndicator());
+                  return const Center(child: CcLoadingAnimation());
                 }
 
                 final quizzes = snapshot.data!.docs;
@@ -1305,15 +1306,20 @@ class _PostsTabState extends State<_PostsTab> {
 
                     // 🔹 CHAPTER QUIZ POST
                     final String chapterName =
-                        data['chapterName'] ?? 'Chapter Quiz';
+                        data['chapterName'] ??
+                        data['title'] ??
+                        data['conceptName'] ??
+                        'Chapter Quiz';
 
                     final Timestamp publishedAt =
                         data['publishedAt'] ?? Timestamp.now();
 
-                    // ⏰ Deadline = 7 days after publish
-                    final DateTime deadline = publishedAt.toDate().add(
-                      const Duration(days: 7),
-                    );
+                    final Timestamp? deadlineTs =
+                        data['deadline'] as Timestamp?;
+
+                    final DateTime deadline =
+                        deadlineTs?.toDate() ??
+                        publishedAt.toDate().add(const Duration(days: 7));
 
                     final bool isExpired = DateTime.now().isAfter(deadline);
 
@@ -1361,7 +1367,7 @@ class _PostsTabState extends State<_PostsTab> {
                               style: TextStyle(
                                 color: isExpired
                                     ? Colors.redAccent
-                                    : Colors.greenAccent,
+                                    : const Color(0xFF2E6BFF),
                                 fontWeight: FontWeight.w600,
                               ),
                             ),
@@ -1374,11 +1380,11 @@ class _PostsTabState extends State<_PostsTab> {
                               child: ElevatedButton.icon(
                                 icon: Icon(
                                   isExpired ? Icons.lock : Icons.play_arrow,
-                                  color: Colors.black,
+                                  color: Colors.white,
                                 ),
                                 label: Text(
                                   isExpired ? "Quiz Closed" : "Attempt Quiz",
-                                  style: const TextStyle(color: Colors.black),
+                                  style: const TextStyle(color: Colors.white),
                                 ),
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: isExpired
@@ -1438,15 +1444,24 @@ class _PostsTabState extends State<_PostsTab> {
                     ),
                   ),
                   const SizedBox(width: 8),
-                  IconButton(
-                    onPressed: _isPosting ? null : _sendStudentPost,
-                    icon: _isPosting
-                        ? const SizedBox(
-                            width: 18,
-                            height: 18,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : const Icon(Icons.send_rounded),
+                  Container(
+                    decoration: const BoxDecoration(
+                      color: Color(0xFF2E6BFF),
+                      shape: BoxShape.circle,
+                    ),
+                    child: IconButton(
+                      onPressed: _isPosting ? null : _sendStudentPost,
+                      icon: _isPosting
+                          ? const SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CcLoadingAnimation(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
+                            )
+                          : const Icon(Icons.send_rounded, color: Colors.white),
+                    ),
                   ),
                 ],
               ),
@@ -1478,7 +1493,7 @@ class _AssignmentsTab extends StatelessWidget {
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(
-              child: CircularProgressIndicator(color: Color(0xFF2E6BFF)),
+              child: CcLoadingAnimation(color: Color(0xFF2E6BFF)),
             );
           }
 
@@ -1760,7 +1775,7 @@ class _HomeworkTabState extends State<_HomeworkTab> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              CircularProgressIndicator(color: Color(0xFF2E6BFF)),
+              CcLoadingAnimation(color: Color(0xFF2E6BFF)),
               SizedBox(height: 16),
               Text(
                 "AI is crafting your personal homework...",
@@ -1822,7 +1837,7 @@ class _HomeworkTabState extends State<_HomeworkTab> {
                 .snapshots(),
             builder: (context, quizSnap) {
               if (!quizSnap.hasData) {
-                return const Center(child: CircularProgressIndicator());
+                return const Center(child: CcLoadingAnimation());
               }
 
               // Extract weak concepts & latest quiz time
@@ -1869,7 +1884,7 @@ class _HomeworkTabState extends State<_HomeworkTab> {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const CircularProgressIndicator(color: Color(0xFF2E6BFF)),
+                      const CcLoadingAnimation(color: Color(0xFF2E6BFF)),
                       const SizedBox(height: 16),
                       Text(
                         "New weak concepts detected!\nGenerating personalized homework...",
@@ -2811,7 +2826,7 @@ class _MiniProjectsScreenState extends State<_MiniProjectsScreen> {
         builder: (context, pblSnapshot) {
           if (pblSnapshot.connectionState == ConnectionState.waiting) {
             return const Center(
-              child: CircularProgressIndicator(color: Color(0xFFA5B2C8)),
+              child: CcLoadingAnimation(color: Color(0xFFA5B2C8)),
             );
           }
 
@@ -2833,7 +2848,7 @@ class _MiniProjectsScreenState extends State<_MiniProjectsScreen> {
               if (selectionSnapshot.connectionState ==
                   ConnectionState.waiting) {
                 return const Center(
-                  child: CircularProgressIndicator(color: Color(0xFFA5B2C8)),
+                  child: CcLoadingAnimation(color: Color(0xFFA5B2C8)),
                 );
               }
 
@@ -3169,7 +3184,7 @@ class _PblProjectsScreen extends StatelessWidget {
         builder: (context, snapshot) {
           if (!snapshot.hasData) {
             return const Center(
-              child: CircularProgressIndicator(color: Color(0xFFA5B2C8)),
+              child: CcLoadingAnimation(color: Color(0xFFA5B2C8)),
             );
           }
 
@@ -3461,7 +3476,7 @@ class _PblMiniProjectStatus extends StatelessWidget {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const SizedBox(
             height: 60,
-            child: Center(child: CircularProgressIndicator()),
+            child: Center(child: CcLoadingAnimation()),
           );
         }
 
@@ -3547,7 +3562,7 @@ class _PblMiniProjectStatus extends StatelessWidget {
                         child: Text(
                           "Tap to view step-by-step guidelines",
                           style: TextStyle(
-                            color: Colors.cyanAccent,
+                            color: Color(0xFF2E6BFF),
                             fontSize: 12,
                           ),
                         ),

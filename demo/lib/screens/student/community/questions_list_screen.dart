@@ -1,5 +1,6 @@
 import 'package:demo/screens/student/community/leaderboard_screen.dart';
 import 'package:flutter/material.dart';
+import 'package:demo/widgets/ui/cc_loading_animation.dart';
 import 'package:demo/services/firestore_service.dart';
 import 'package:demo/models/question.dart';
 import 'package:demo/models/reaction.dart';
@@ -185,7 +186,7 @@ class _QuestionsListScreenState extends State<QuestionsListScreen> {
                         if (snapshot.connectionState ==
                             ConnectionState.waiting) {
                           return const Center(
-                            child: CircularProgressIndicator(),
+                            child: CcLoadingAnimation(),
                           );
                         }
 

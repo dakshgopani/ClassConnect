@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:demo/widgets/ui/cc_loading_animation.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -118,7 +119,7 @@ class MiniProjectEnrolledStudentsScreen extends StatelessWidget {
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
                   return const Center(
-                    child: CircularProgressIndicator(color: const Color(0xFF2E6BFF)),
+                    child: CcLoadingAnimation(color: const Color(0xFF2E6BFF)),
                   );
                 }
 

@@ -1,5 +1,6 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
+import 'package:demo/widgets/ui/cc_loading_animation.dart';
 import 'package:table_calendar/table_calendar.dart';
 import '../models/teacher_task.dart';
 import '../models/productivity.dart';
@@ -147,9 +148,7 @@ class _TeacherTaskScreenState extends State<TeacherTaskScreen>
             stream: _streamForFilter(),
             builder: (context, snapshot) {
               if (snapshot.connectionState == ConnectionState.waiting) {
-                return const Center(
-                  child: CircularProgressIndicator(color: _accent),
-                );
+                return const Center(child: CcLoadingAnimation(color: _accent));
               }
               final tasks = snapshot.data ?? [];
               if (tasks.isEmpty) {
@@ -851,7 +850,7 @@ class _TeacherTaskScreenState extends State<TeacherTaskScreen>
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting &&
             (snapshot.data == null || snapshot.data!.isEmpty)) {
-          return const Center(child: CircularProgressIndicator(color: _accent));
+          return const Center(child: CcLoadingAnimation(color: _accent));
         }
 
         final tasks = snapshot.data ?? [];
@@ -861,12 +860,19 @@ class _TeacherTaskScreenState extends State<TeacherTaskScreen>
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.speed, size: 48, color: Colors.black.withValues(alpha: 0.1)),
+                Icon(
+                  Icons.speed,
+                  size: 48,
+                  color: Colors.black.withValues(alpha: 0.1),
+                ),
                 const SizedBox(height: 12),
                 Text(
                   'Complete some tasks to see\nyour productivity trends.',
                   textAlign: TextAlign.center,
-                  style: TextStyle(color: Colors.black.withValues(alpha: 0.6), fontSize: 15),
+                  style: TextStyle(
+                    color: Colors.black.withValues(alpha: 0.6),
+                    fontSize: 15,
+                  ),
                 ),
               ],
             ),
@@ -1656,10 +1662,7 @@ class _TeacherTaskScreenState extends State<TeacherTaskScreen>
             const Center(
               child: Padding(
                 padding: EdgeInsets.all(16),
-                child: CircularProgressIndicator(
-                  color: _accent,
-                  strokeWidth: 2,
-                ),
+                child: CcLoadingAnimation(color: _accent, strokeWidth: 2),
               ),
             )
           else if (_cachedTips != null)
@@ -1989,5 +1992,3 @@ class _TeacherTaskScreenState extends State<TeacherTaskScreen>
     }
   }
 }
-
-

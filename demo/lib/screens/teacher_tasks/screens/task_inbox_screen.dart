@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:demo/widgets/ui/cc_loading_animation.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/teacher_task.dart';
 import '../services/teacher_task_query_service.dart';
@@ -71,7 +72,7 @@ class TaskInboxScreen extends StatelessWidget {
         stream: queryService.getInboxTasks(teacherId: teacherId),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
+            return const Center(child: CcLoadingAnimation());
           }
 
           if (!snapshot.hasData || snapshot.data!.isEmpty) {

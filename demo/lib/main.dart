@@ -4,6 +4,7 @@ import 'package:demo/theme/app_theme.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'package:demo/widgets/ui/cc_loading_animation.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:demo/screens/student_home.dart';
 import 'package:demo/screens/teacher_home.dart';
@@ -70,7 +71,7 @@ class AuthWrapper extends StatelessWidget {
           return const Scaffold(
             backgroundColor: Color(0xFFF4F8FF),
             body: Center(
-              child: CircularProgressIndicator(color: Colors.white30),
+              child: CcLoadingAnimation(color: Colors.white30),
             ),
           );
         }
@@ -102,7 +103,7 @@ class RoleRouter extends StatelessWidget {
           return const Scaffold(
             backgroundColor: Color(0xFFF4F8FF),
             body: Center(
-              child: CircularProgressIndicator(color: Colors.white30),
+              child: CcLoadingAnimation(color: Colors.white30),
             ),
           );
         }
@@ -161,7 +162,7 @@ class RoleRouter extends StatelessWidget {
               return const Scaffold(
                 backgroundColor: Color(0xFFF4F8FF),
                 body: Center(
-                  child: CircularProgressIndicator(color: Colors.white30),
+                  child: CcLoadingAnimation(color: Colors.white30),
                 ),
               );
             }

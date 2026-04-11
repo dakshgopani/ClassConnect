@@ -1,5 +1,6 @@
 import 'package:demo/screens/teacher/pbl/services/gemini_service.dart';
 import 'package:flutter/material.dart';
+import 'package:demo/widgets/ui/cc_loading_animation.dart';
 import 'pbl_editor_screen.dart';
 
 class GeneratePblScreen extends StatefulWidget {
@@ -44,7 +45,7 @@ class _GeneratePblScreenState extends State<GeneratePblScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    return const Scaffold(body: Center(child: CcLoadingAnimation()));
   }
 }
 

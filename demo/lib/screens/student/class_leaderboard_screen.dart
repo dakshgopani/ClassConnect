@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:demo/widgets/ui/cc_loading_animation.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class ClassLeaderboardScreen extends StatelessWidget {
@@ -35,7 +36,7 @@ class ClassLeaderboardScreen extends StatelessWidget {
             // 🔄 Loading
             if (snapshot.connectionState == ConnectionState.waiting) {
               return const Center(
-                child: CircularProgressIndicator(color: Color(0xFF2E6BFF)),
+                child: CcLoadingAnimation(color: Color(0xFF2E6BFF)),
               );
             }
 

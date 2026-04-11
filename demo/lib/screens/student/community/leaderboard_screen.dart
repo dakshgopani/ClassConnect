@@ -1,5 +1,6 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
+import 'package:demo/widgets/ui/cc_loading_animation.dart';
 import 'package:demo/services/firestore_service.dart';
 import 'package:demo/widgets/ui/cc_decorated_background.dart';
 
@@ -27,7 +28,7 @@ class LeaderboardScreen extends StatelessWidget {
           future: FirestoreService().getTopUsers(), // Get ALL users
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
-              return const Center(child: CircularProgressIndicator());
+              return const Center(child: CcLoadingAnimation());
             }
             if (snapshot.hasError) {
               return Center(
