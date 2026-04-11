@@ -30,7 +30,7 @@ class MiniProjectEnrolledStudentsScreen extends StatelessWidget {
       appBar: AppBar(
         title: const Text(
           'Enrolled Students',
-          style: TextStyle(color: Colors.white),
+          style: TextStyle(color: const Color(0xFF0D1B3D)),
         ),
         backgroundColor: const Color(0xFFF4F8FF),
         elevation: 0,
@@ -64,12 +64,12 @@ class MiniProjectEnrolledStudentsScreen extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: Colors.cyan.withOpacity(0.1),
+                    color: const Color(0xFF2E6BFF).withOpacity(0.1),
                     shape: BoxShape.circle,
                   ),
                   child: const Icon(
                     Icons.rocket_launch_rounded,
-                    color: Colors.cyanAccent,
+                    color: const Color(0xFF2E6BFF),
                     size: 24,
                   ),
                 ),
@@ -93,7 +93,7 @@ class MiniProjectEnrolledStudentsScreen extends StatelessWidget {
                         style: const TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
-                          color: Colors.white,
+                          color: const Color(0xFF0D1B3D),
                           height: 1.2,
                         ),
                       ),
@@ -118,7 +118,7 @@ class MiniProjectEnrolledStudentsScreen extends StatelessWidget {
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
                   return const Center(
-                    child: CircularProgressIndicator(color: Colors.cyanAccent),
+                    child: CircularProgressIndicator(color: const Color(0xFF2E6BFF)),
                   );
                 }
 
@@ -127,7 +127,7 @@ class MiniProjectEnrolledStudentsScreen extends StatelessWidget {
                     child: Text(
                       'No students enrolled yet.',
                       style: TextStyle(
-                        color: Colors.white.withOpacity(0.6),
+                        color: const Color(0xFF5C6B8C),
                         fontSize: 16,
                       ),
                     ),
@@ -185,12 +185,12 @@ class MiniProjectEnrolledStudentsScreen extends StatelessWidget {
                         return Container(
                           margin: const EdgeInsets.only(bottom: 12),
                           decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.05),
+                            color: const Color(0xFFF0F4FF),
                             borderRadius: BorderRadius.circular(16),
                             border: Border.all(
                               color: isSubmitted
                                   ? Colors.green.withOpacity(0.3)
-                                  : Colors.white.withOpacity(0.1),
+                                  : const Color(0x1A2E6BFF),
                               width: isSubmitted ? 1.5 : 1,
                             ),
                           ),
@@ -211,7 +211,7 @@ class MiniProjectEnrolledStudentsScreen extends StatelessWidget {
                                         ? name[0].toUpperCase()
                                         : '?',
                                     style: const TextStyle(
-                                      color: Colors.white,
+                                      color: const Color(0xFF0D1B3D),
                                       fontWeight: FontWeight.bold,
                                       fontSize: 20,
                                     ),
@@ -220,7 +220,7 @@ class MiniProjectEnrolledStudentsScreen extends StatelessWidget {
                                 title: Text(
                                   name,
                                   style: const TextStyle(
-                                    color: Colors.white,
+                                    color: const Color(0xFF0D1B3D),
                                     fontWeight: FontWeight.w600,
                                   ),
                                 ),
@@ -233,7 +233,7 @@ class MiniProjectEnrolledStudentsScreen extends StatelessWidget {
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
                                       style: TextStyle(
-                                        color: Colors.white.withOpacity(0.5),
+                                        color: const Color(0xFF5C6B8C),
                                         fontSize: 13,
                                       ),
                                     ),
@@ -247,7 +247,7 @@ class MiniProjectEnrolledStudentsScreen extends StatelessWidget {
                                         style: TextStyle(
                                           color: isSubmitted
                                               ? Colors.greenAccent
-                                              : Colors.white70,
+                                              : const Color(0xFF5C6B8C),
                                           fontSize: 12,
                                         ),
                                       ),
@@ -258,7 +258,7 @@ class MiniProjectEnrolledStudentsScreen extends StatelessWidget {
                                     ? IconButton(
                                         icon: const Icon(
                                           Icons.visibility,
-                                          color: Colors.cyanAccent,
+                                          color: const Color(0xFF2E6BFF),
                                         ),
                                         onPressed: () {
                                           if (submissionUrl != null) {
@@ -286,3 +286,7 @@ class MiniProjectEnrolledStudentsScreen extends StatelessWidget {
     );
   }
 }
+
+
+
+

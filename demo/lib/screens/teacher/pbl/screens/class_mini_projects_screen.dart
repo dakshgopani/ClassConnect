@@ -14,7 +14,10 @@ class ClassMiniProjectsScreen extends StatelessWidget {
       appBar: AppBar(
         title: const Text(
           'All Mini Projects',
-          style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            color: const Color(0xFF0D1B3D),
+          ),
         ),
         backgroundColor: const Color(0xFFF4F8FF),
         elevation: 0,
@@ -30,7 +33,7 @@ class ClassMiniProjectsScreen extends StatelessWidget {
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(
-              child: CircularProgressIndicator(color: Colors.cyanAccent),
+              child: CircularProgressIndicator(color: const Color(0xFF2E6BFF)),
             );
           }
 
@@ -42,13 +45,13 @@ class ClassMiniProjectsScreen extends StatelessWidget {
                   Icon(
                     Icons.folder_open_rounded,
                     size: 64,
-                    color: Colors.white.withOpacity(0.5),
+                    color: const Color(0xFF5C6B8C),
                   ),
                   const SizedBox(height: 16),
                   Text(
                     'No projects found.',
                     style: TextStyle(
-                      color: Colors.white.withOpacity(0.7),
+                      color: const Color(0xFF5C6B8C),
                       fontSize: 16,
                     ),
                   ),
@@ -80,7 +83,7 @@ class ClassMiniProjectsScreen extends StatelessWidget {
             return Center(
               child: Text(
                 'No mini projects generated yet.',
-                style: TextStyle(color: Colors.white.withOpacity(0.7)),
+                style: TextStyle(color: const Color(0xFF5C6B8C)),
               ),
             );
           }
@@ -147,12 +150,12 @@ class ClassMiniProjectsScreen extends StatelessWidget {
                               Container(
                                 padding: const EdgeInsets.all(8),
                                 decoration: BoxDecoration(
-                                  color: Colors.white.withOpacity(0.05),
+                                  color: const Color(0xFFF0F4FF),
                                   shape: BoxShape.circle,
                                 ),
                                 child: const Icon(
                                   Icons.people_alt_outlined,
-                                  color: Colors.white70,
+                                  color: const Color(0xFF5C6B8C),
                                   size: 18,
                                 ),
                               ),
@@ -164,7 +167,7 @@ class ClassMiniProjectsScreen extends StatelessWidget {
                             style: const TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.bold,
-                              color: Colors.white,
+                              color: const Color(0xFF0D1B3D),
                               height: 1.3,
                             ),
                           ),
@@ -175,7 +178,7 @@ class ClassMiniProjectsScreen extends StatelessWidget {
                             overflow: TextOverflow.ellipsis,
                             style: TextStyle(
                               fontSize: 14,
-                              color: Colors.white.withOpacity(0.6),
+                              color: const Color(0xFF5C6B8C),
                               height: 1.4,
                             ),
                           ),
@@ -185,7 +188,7 @@ class ClassMiniProjectsScreen extends StatelessWidget {
                               Text(
                                 "View Enrolled Students",
                                 style: TextStyle(
-                                  color: Colors.cyan.shade300,
+                                  color: const Color(0xFF2E6BFF),
                                   fontSize: 13,
                                   fontWeight: FontWeight.w600,
                                 ),
@@ -194,7 +197,7 @@ class ClassMiniProjectsScreen extends StatelessWidget {
                               Icon(
                                 Icons.arrow_forward_rounded,
                                 size: 14,
-                                color: Colors.cyan.shade300,
+                                color: const Color(0xFF2E6BFF),
                               ),
                             ],
                           ),
@@ -211,3 +214,5 @@ class ClassMiniProjectsScreen extends StatelessWidget {
     );
   }
 }
+
+

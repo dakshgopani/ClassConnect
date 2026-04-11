@@ -7,6 +7,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:intl/intl.dart';
 import 'pbl_submission_sheet.dart';
+import 'package:demo/widgets/ui/cc_decorated_background.dart';
 
 import 'package:demo/screens/student/resources/student_resources_screen.dart';
 
@@ -18,12 +19,19 @@ class StudentPblScreen extends StatefulWidget {
 }
 
 class _StudentPblScreenState extends State<StudentPblScreen> {
+  static const _bg = Color(0xFFF4F8FF);
+  static const _surface = Colors.white;
+  static const _surfaceLight = Color(0xFFF0F4FF);
+  static const _accent = Color(0xFF2E6BFF);
+  static const _textPrimary = Color(0xFF0D1B3D);
+  static const _textSecondary = Color(0xFF5C6B8C);
+
   @override
   Widget build(BuildContext context) {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
       return const Center(
-        child: Text('Please log in', style: TextStyle(color: Colors.white70)),
+        child: Text('Please log in', style: TextStyle(color: _textSecondary)),
       );
     }
 
@@ -46,38 +54,46 @@ class _StudentPblScreenState extends State<StudentPblScreen> {
         final pblProjects = snapshot.data ?? [];
 
         if (pblProjects.isEmpty) {
-          return Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(Icons.school_outlined, size: 64, color: Colors.white30),
-                const SizedBox(height: 16),
-                const Text(
-                  'No PBL Projects Assigned',
-                  style: TextStyle(
-                    color: Colors.white70,
-                    fontSize: 18,
-                    fontWeight: FontWeight.w500,
+          return CcDecoratedBackground(
+            child: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.school_outlined,
+                    size: 64,
+                    color: Colors.blueGrey.shade300,
                   ),
-                ),
-                const SizedBox(height: 8),
-                const Text(
-                  'Your teachers will assign PBL projects here',
-                  style: TextStyle(color: Colors.white54, fontSize: 14),
-                ),
-                const SizedBox(height: 32),
-              ],
+                  const SizedBox(height: 16),
+                  const Text(
+                    'No PBL Projects Assigned',
+                    style: TextStyle(
+                      color: _textPrimary,
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  const Text(
+                    'Your teachers will assign PBL projects here',
+                    style: TextStyle(color: _textSecondary, fontSize: 14),
+                  ),
+                  const SizedBox(height: 32),
+                ],
+              ),
             ),
           );
         }
 
-        return SingleChildScrollView(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            children: [
-              ...pblProjects.map((pbl) => _buildPblCard(context, pbl)),
-              const SizedBox(height: 16),
-            ],
+        return CcDecoratedBackground(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              children: [
+                ...pblProjects.map((pbl) => _buildPblCard(context, pbl)),
+                const SizedBox(height: 16),
+              ],
+            ),
           ),
         );
       },
@@ -169,7 +185,7 @@ class _StudentPblScreenState extends State<StudentPblScreen> {
       elevation: 3,
       margin: const EdgeInsets.only(bottom: 16),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      color: const Color(0xFF1A2856),
+      color: _surface,
       child: InkWell(
         onTap: () {
           _showPblDetails(context, pblData);
@@ -187,13 +203,13 @@ class _StudentPblScreenState extends State<StudentPblScreen> {
                   vertical: 6,
                 ),
                 decoration: BoxDecoration(
-                  color: Colors.indigo.shade700,
+                  color: _surfaceLight,
                   borderRadius: BorderRadius.circular(16),
                 ),
                 child: Text(
                   className,
                   style: const TextStyle(
-                    color: Colors.white,
+                    color: _textPrimary,
                     fontSize: 12,
                     fontWeight: FontWeight.w500,
                   ),
@@ -228,7 +244,7 @@ class _StudentPblScreenState extends State<StudentPblScreen> {
                 style: const TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
-                  color: Colors.cyan,
+                  color: _textPrimary,
                 ),
               ),
               const SizedBox(height: 8),
@@ -237,14 +253,14 @@ class _StudentPblScreenState extends State<StudentPblScreen> {
                 problemStatement,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(fontSize: 14, color: Colors.white70),
+                style: const TextStyle(fontSize: 14, color: _textSecondary),
               ),
               const SizedBox(height: 12),
               // Pair info
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: Colors.white10,
+                  color: _surfaceLight,
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Column(
@@ -255,7 +271,7 @@ class _StudentPblScreenState extends State<StudentPblScreen> {
                       style: const TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
-                        color: Colors.cyan,
+                        color: _accent,
                       ),
                     ),
                     const SizedBox(height: 8),
@@ -268,7 +284,7 @@ class _StudentPblScreenState extends State<StudentPblScreen> {
                                 const Icon(
                                   Icons.person,
                                   size: 14,
-                                  color: Colors.white54,
+                                  color: _textSecondary,
                                 ),
                                 const SizedBox(width: 8),
                                 Expanded(
@@ -276,7 +292,7 @@ class _StudentPblScreenState extends State<StudentPblScreen> {
                                     student['name'] ?? 'Unknown',
                                     style: const TextStyle(
                                       fontSize: 13,
-                                      color: Colors.white70,
+                                      color: _textPrimary,
                                     ),
                                   ),
                                 ),
@@ -302,7 +318,7 @@ class _StudentPblScreenState extends State<StudentPblScreen> {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      backgroundColor: const Color(0xFF1A2856),
+      backgroundColor: _bg,
       builder: (context) => DraggableScrollableSheet(
         initialChildSize: 0.8,
         minChildSize: 0.5,

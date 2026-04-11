@@ -17,7 +17,17 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await dotenv.load(fileName: '.env');
   await Firebase.initializeApp();
-  await Supabase.initialize(url: 'SUPABASE_URL', anonKey: 'SUPABASE_KEY');
+  final supabaseUrl = dotenv.env['SUPABASE_URL']?.trim() ?? '';
+  final supabaseAnonKey = dotenv.env['SUPABASE_ANON_KEY']?.trim() ?? '';
+
+  if (supabaseUrl.isEmpty || !supabaseUrl.startsWith('http')) {
+    throw StateError('SUPABASE_URL is missing or invalid in .env');
+  }
+  if (supabaseAnonKey.isEmpty) {
+    throw StateError('SUPABASE_ANON_KEY is missing in .env');
+  }
+
+  await Supabase.initialize(url: supabaseUrl, anonKey: supabaseAnonKey);
   WeeklyReportScheduler.initialize();
   runApp(const MyApp());
 }

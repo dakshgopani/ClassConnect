@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'dart:math';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:intl/intl.dart';
+import 'package:demo/widgets/ui/cc_decorated_background.dart';
 import 'pair_submissions_screen.dart';
 
 class PblDetailScreen extends StatefulWidget {
@@ -24,17 +25,24 @@ class PblDetailScreen extends StatefulWidget {
 }
 
 class _PblDetailScreenState extends State<PblDetailScreen> {
+  static const _bg = Color(0xFFF4F8FF);
+  static const _surface = Colors.white;
+  static const _surfaceLight = Color(0xFFF0F4FF);
+  static const _accent = Color(0xFF2E6BFF);
+  static const _textPrimary = Color(0xFF0D1B3D);
+  static const _textSecondary = Color(0xFF5C6B8C);
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF4F8FF),
+      backgroundColor: _bg,
       appBar: AppBar(
         title: Text(
           widget.title,
           style: const TextStyle(fontWeight: FontWeight.bold),
         ),
-        backgroundColor: const Color(0xFFF4F8FF),
-        foregroundColor: Colors.white,
+        backgroundColor: _bg,
+        foregroundColor: _textPrimary,
         elevation: 0,
       ),
       body: StreamBuilder<DocumentSnapshot>(
@@ -79,202 +87,201 @@ class _PblDetailScreenState extends State<PblDetailScreen> {
               ? 0
               : (submittedStudents / totalStudents) * 100;
 
-          return SingleChildScrollView(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Problem Statement
-                // Problem Statement
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF152349),
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: Colors.white10),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.2),
-                        blurRadius: 10,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'PROBLEM STATEMENT',
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
-                          letterSpacing: 1.2,
-                          color: Colors.white54,
+          return CcDecoratedBackground(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Problem Statement
+                  // Problem Statement
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: _surface,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: _surfaceLight),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.08),
+                          blurRadius: 10,
+                          offset: const Offset(0, 4),
                         ),
-                      ),
-                      const SizedBox(height: 12),
-                      Text(
-                        pblData['problemStatement'] ?? 'No problem statement',
-                        style: const TextStyle(
-                          fontSize: 16,
-                          height: 1.5,
-                          color: Colors.white,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 20),
-
-                // Assign Students Button
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton.icon(
-                    onPressed: () => _showAssignStudentsDialog(),
-                    icon: const Icon(Icons.group_add, color: Colors.black),
-                    label: const Text(
-                      'Assign Students to Pairs',
-                      style: TextStyle(
-                        color: Colors.black,
-                        fontWeight: FontWeight.bold,
-                      ),
+                      ],
                     ),
-                    style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      backgroundColor: Colors.cyanAccent,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 16),
-
-                // View Assignments Button
-                SizedBox(
-                  width: double.infinity,
-                  child: OutlinedButton.icon(
-                    onPressed: () => _showAssignments(pblData),
-                    icon: const Icon(
-                      Icons.visibility,
-                      color: Colors.cyanAccent,
-                    ),
-                    label: const Text(
-                      'View Student Assignments',
-                      style: TextStyle(color: Colors.cyanAccent),
-                    ),
-                    style: OutlinedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      side: const BorderSide(color: Colors.cyanAccent),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 16),
-
-                // Set Deadline Button
-                SizedBox(
-                  width: double.infinity,
-                  child: OutlinedButton.icon(
-                    onPressed: () => _pickDeadline(pblData),
-                    icon: const Icon(
-                      Icons.calendar_today,
-                      color: Colors.white70,
-                    ),
-                    label: Text(
-                      deadline == null
-                          ? 'Set Project Deadline'
-                          : 'Edit Deadline (Due: ${DateFormat('MMM d').format(deadline)})',
-                      style: const TextStyle(color: Colors.white70),
-                    ),
-                    style: OutlinedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      side: const BorderSide(color: Colors.white24),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 16),
-
-                // Submission Stats Chart
-                if (totalStudents > 0) ...[
-                  const SizedBox(height: 32),
-                  const Text(
-                    'SUBMISSION OVERVIEW',
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white54,
-                      letterSpacing: 1.2,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  SizedBox(
-                    height: 200,
-                    child: Row(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Expanded(
-                          child: PieChart(
-                            PieChartData(
-                              sectionsSpace: 0,
-                              centerSpaceRadius: 40,
-                              sections: [
-                                PieChartSectionData(
-                                  color: Colors.green,
-                                  value: submittedStudents.toDouble(),
-                                  title:
-                                      '${submittedPercentage.toStringAsFixed(0)}%',
-                                  radius: 50,
-                                  titleStyle: const TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.white,
-                                  ),
-                                ),
-                                PieChartSectionData(
-                                  color: Colors.redAccent,
-                                  value: remainingStudents.toDouble(),
-                                  title: '',
-                                  radius: 40,
-                                ),
-                              ],
-                            ),
+                        const Text(
+                          'PROBLEM STATEMENT',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 1.2,
+                            color: _textSecondary,
                           ),
                         ),
-                        const SizedBox(width: 24),
-                        Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            _buildLegendItem(
-                              color: Colors.green,
-                              text: 'Submitted ($submittedStudents)',
-                            ),
-                            const SizedBox(height: 8),
-                            _buildLegendItem(
-                              color: Colors.redAccent,
-                              text: 'Remaining ($remainingStudents)',
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              'Total Students: $totalStudents',
-                              style: const TextStyle(
-                                color: Colors.white54,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ],
+                        const SizedBox(height: 12),
+                        Text(
+                          pblData['problemStatement'] ?? 'No problem statement',
+                          style: const TextStyle(
+                            fontSize: 16,
+                            height: 1.5,
+                            color: _textPrimary,
+                          ),
                         ),
                       ],
                     ),
                   ),
+                  const SizedBox(height: 20),
+
+                  // Assign Students Button
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      onPressed: () => _showAssignStudentsDialog(),
+                      icon: const Icon(Icons.group_add, color: Colors.white),
+                      label: const Text(
+                        'Assign Students to Pairs',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        backgroundColor: _accent,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+
+                  // View Assignments Button
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton.icon(
+                      onPressed: () => _showAssignments(pblData),
+                      icon: const Icon(Icons.visibility, color: _accent),
+                      label: const Text(
+                        'View Student Assignments',
+                        style: TextStyle(color: _accent),
+                      ),
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        side: const BorderSide(color: _accent),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Set Deadline Button
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton.icon(
+                      onPressed: () => _pickDeadline(pblData),
+                      icon: const Icon(
+                        Icons.calendar_today,
+                        color: _textSecondary,
+                      ),
+                      label: Text(
+                        deadline == null
+                            ? 'Set Project Deadline'
+                            : 'Edit Deadline (Due: ${DateFormat('MMM d').format(deadline)})',
+                        style: const TextStyle(color: _textSecondary),
+                      ),
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        side: const BorderSide(color: const Color(0x1A2E6BFF)),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Submission Stats Chart
+                  if (totalStudents > 0) ...[
+                    const SizedBox(height: 32),
+                    const Text(
+                      'SUBMISSION OVERVIEW',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        color: _textSecondary,
+                        letterSpacing: 1.2,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    SizedBox(
+                      height: 200,
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: PieChart(
+                              PieChartData(
+                                sectionsSpace: 0,
+                                centerSpaceRadius: 40,
+                                sections: [
+                                  PieChartSectionData(
+                                    color: Colors.green,
+                                    value: submittedStudents.toDouble(),
+                                    title:
+                                        '${submittedPercentage.toStringAsFixed(0)}%',
+                                    radius: 50,
+                                    titleStyle: const TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
+                                      color: _textPrimary,
+                                    ),
+                                  ),
+                                  PieChartSectionData(
+                                    color: Colors.redAccent,
+                                    value: remainingStudents.toDouble(),
+                                    title: '',
+                                    radius: 40,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 24),
+                          Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              _buildLegendItem(
+                                color: Colors.green,
+                                text: 'Submitted ($submittedStudents)',
+                              ),
+                              const SizedBox(height: 8),
+                              _buildLegendItem(
+                                color: Colors.redAccent,
+                                text: 'Remaining ($remainingStudents)',
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                'Total Students: $totalStudents',
+                                style: const TextStyle(
+                                  color: _textSecondary,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ],
-              ],
+              ),
             ),
           );
         },
@@ -288,35 +295,35 @@ class _PblDetailScreenState extends State<PblDetailScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: const Color(0xFF152349),
+        backgroundColor: _surface,
         title: const Text(
           'Create Student Pairs',
-          style: TextStyle(color: Colors.white),
+          style: TextStyle(color: _textPrimary),
         ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             const Text(
               'How many students in each pair?',
-              style: TextStyle(color: Colors.white70),
+              style: TextStyle(color: _textSecondary),
             ),
             const SizedBox(height: 16),
             TextField(
               controller: pairCountController,
               keyboardType: TextInputType.number,
-              style: const TextStyle(color: Colors.white),
+              style: const TextStyle(color: _textPrimary),
               decoration: InputDecoration(
                 labelText: 'Students per pair',
-                labelStyle: const TextStyle(color: Colors.white54),
+                labelStyle: const TextStyle(color: _textSecondary),
                 hintText: 'e.g., 2 or 3',
-                hintStyle: const TextStyle(color: Colors.white24),
+                hintStyle: const TextStyle(color: _textSecondary),
                 enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
-                  borderSide: const BorderSide(color: Colors.white24),
+                  borderSide: const BorderSide(color: Color(0x1A2E6BFF)),
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
-                  borderSide: const BorderSide(color: Colors.cyanAccent),
+                  borderSide: const BorderSide(color: _accent),
                 ),
               ),
             ),
@@ -327,7 +334,7 @@ class _PblDetailScreenState extends State<PblDetailScreen> {
             onPressed: () => Navigator.pop(context),
             child: const Text(
               'Cancel',
-              style: TextStyle(color: Colors.white54),
+              style: TextStyle(color: _textSecondary),
             ),
           ),
           ElevatedButton(
@@ -337,11 +344,13 @@ class _PblDetailScreenState extends State<PblDetailScreen> {
               Navigator.pop(context);
               _assignStudents(studentsPerPair);
             },
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.cyanAccent),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF2E6BFF),
+            ),
             child: const Text(
               'Assign',
               style: TextStyle(
-                color: Colors.black,
+                color: Colors.white,
                 fontWeight: FontWeight.bold,
               ),
             ),
@@ -481,7 +490,7 @@ class _PblDetailScreenState extends State<PblDetailScreen> {
           text,
           style: const TextStyle(
             fontWeight: FontWeight.bold,
-            color: Colors.white,
+            color: const Color(0xFF0D1B3D),
           ),
         ),
       ],
@@ -566,7 +575,7 @@ class _PblDetailScreenState extends State<PblDetailScreen> {
       builder: (context) => Container(
         padding: const EdgeInsets.all(16),
         decoration: const BoxDecoration(
-          color: Color(0xFF0F1C3F),
+          color: _surface,
           borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
         ),
         child: Column(
@@ -580,12 +589,12 @@ class _PblDetailScreenState extends State<PblDetailScreen> {
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
-                    color: Colors.white,
+                    color: _textPrimary,
                   ),
                 ),
                 IconButton(
                   onPressed: () => Navigator.pop(context),
-                  icon: const Icon(Icons.close, color: Colors.white54),
+                  icon: const Icon(Icons.close, color: _textSecondary),
                 ),
               ],
             ),
@@ -601,9 +610,9 @@ class _PblDetailScreenState extends State<PblDetailScreen> {
                   return Container(
                     margin: const EdgeInsets.only(bottom: 12),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF152349),
+                      color: _surface,
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: Colors.white10),
+                      border: Border.all(color: _surfaceLight),
                     ),
                     child: Material(
                       color: Colors.transparent,
@@ -635,7 +644,7 @@ class _PblDetailScreenState extends State<PblDetailScreen> {
                                 style: TextStyle(
                                   fontSize: 14,
                                   fontWeight: FontWeight.bold,
-                                  color: Colors.cyanAccent.shade200,
+                                  color: _accent,
                                 ),
                               ),
                               const SizedBox(height: 8),
@@ -651,7 +660,7 @@ class _PblDetailScreenState extends State<PblDetailScreen> {
                                       const Icon(
                                         Icons.person,
                                         size: 16,
-                                        color: Colors.white38,
+                                        color: Colors.black38,
                                       ),
                                       const SizedBox(width: 8),
                                       Expanded(
@@ -663,14 +672,14 @@ class _PblDetailScreenState extends State<PblDetailScreen> {
                                               student['name'] ?? 'Unknown',
                                               style: const TextStyle(
                                                 fontWeight: FontWeight.w500,
-                                                color: Colors.white,
+                                                color: _textPrimary,
                                               ),
                                             ),
                                             Text(
                                               student['email'] ?? '',
                                               style: const TextStyle(
                                                 fontSize: 12,
-                                                color: Colors.white38,
+                                                color: Colors.black38,
                                               ),
                                             ),
                                           ],
@@ -685,8 +694,8 @@ class _PblDetailScreenState extends State<PblDetailScreen> {
                                               ? Icons.check_circle
                                               : Icons.circle_outlined,
                                           color: isSubmitted
-                                              ? Colors.greenAccent
-                                              : Colors.white24,
+                                              ? Colors.green
+                                              : const Color(0x1A2E6BFF),
                                           size: 20,
                                         ),
                                       ),

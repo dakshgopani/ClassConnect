@@ -86,13 +86,13 @@ class _UploadSyllabusScreenState extends State<UploadSyllabusScreen> {
               style: TextStyle(
                 fontSize: 22,
                 fontWeight: FontWeight.bold,
-                color: Colors.white,
+                color: const Color(0xFF0D1B3D),
               ),
             ),
             const SizedBox(height: 12),
             const Text(
               'Supported formats: PDF, DOC, Image',
-              style: TextStyle(color: Colors.white70),
+              style: TextStyle(color: const Color(0xFF5C6B8C)),
             ),
             const SizedBox(height: 32),
 
@@ -121,7 +121,7 @@ class _UploadSyllabusScreenState extends State<UploadSyllabusScreen> {
                               fileName ?? 'Tap to upload syllabus',
                               style: const TextStyle(
                                 fontSize: 16,
-                                color: Colors.white,
+                                color: const Color(0xFF0D1B3D),
                               ),
                             ),
                           ],
@@ -135,3 +135,7 @@ class _UploadSyllabusScreenState extends State<UploadSyllabusScreen> {
     );
   }
 }
+
+
+
+

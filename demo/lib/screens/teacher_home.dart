@@ -56,7 +56,7 @@ class _TeacherHomeState extends State<TeacherHome> {
           title: Row(
             mainAxisSize: MainAxisSize.min,
             children: const [
-              Icon(Icons.dashboard_rounded, color: accentColor),
+              
               SizedBox(width: 8),
               Text("Dashboard", style: TextStyle(color: Color(0xFF0D1B3D))),
             ],
@@ -81,8 +81,7 @@ class _TeacherHomeState extends State<TeacherHome> {
           title: Row(
             mainAxisSize: MainAxisSize.min,
             children: const [
-              Icon(Icons.work_outline_rounded, color: accentColor),
-              SizedBox(width: 8),
+              SizedBox(width:8),
               Text("Workload", style: TextStyle(color: Color(0xFF0D1B3D))),
             ],
           ),
@@ -100,7 +99,6 @@ class _TeacherHomeState extends State<TeacherHome> {
           title: Row(
             mainAxisSize: MainAxisSize.min,
             children: const [
-              Icon(Icons.class_rounded, color: accentColor),
               SizedBox(width: 8),
               Text("Classes", style: TextStyle(color: Color(0xFF0D1B3D))),
             ],
@@ -135,7 +133,6 @@ class _TeacherHomeState extends State<TeacherHome> {
           title: Row(
             mainAxisSize: MainAxisSize.min,
             children: const [
-              Icon(Icons.settings_rounded, color: accentColor),
               SizedBox(width: 8),
               Text("Settings", style: TextStyle(color: Color(0xFF0D1B3D))),
             ],

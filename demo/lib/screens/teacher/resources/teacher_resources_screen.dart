@@ -862,6 +862,16 @@ class _TeacherResourcesScreenState extends State<TeacherResourcesScreen> {
     }
   }
 
+  Future<void> _ensureSupabaseSession() async {
+    final supabase = Supabase.instance.client;
+    if (supabase.auth.currentSession != null) return;
+    try {
+      await supabase.auth.signInAnonymously();
+    } on AuthException {
+      // Anonymous auth may be disabled; continue with anon role requests.
+    }
+  }
+
   Future<void> _uploadFileResource() async {
     final description = _descriptionController.text.trim();
 
@@ -889,6 +899,8 @@ class _TeacherResourcesScreenState extends State<TeacherResourcesScreen> {
     }
 
     try {
+      await _ensureSupabaseSession();
+
       final safeName = fileName.replaceAll(RegExp(r'[^a-zA-Z0-9._-]'), '_');
       final storagePath =
           'class_resources/${widget.classId}/${DateTime.now().millisecondsSinceEpoch}_$safeName';
@@ -925,6 +937,31 @@ class _TeacherResourcesScreenState extends State<TeacherResourcesScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('File uploaded successfully')),
+        );
+      }
+    } on StorageException catch (e) {
+      final msg = e.toString().toLowerCase();
+      final isRls =
+          msg.contains('row-level security') || msg.contains('violates');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              isRls
+                  ? 'Upload blocked by Supabase Storage policy. Please enable upload policy for bucket "resources".'
+                  : 'Storage error: $e',
+            ),
+          ),
+        );
+      }
+    } on AuthException catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Supabase auth error: ${e.message}. Enable Anonymous provider or add Storage policy for anon role.',
+            ),
+          ),
         );
       }
     } catch (e) {
@@ -965,6 +1002,7 @@ class _TeacherResourcesScreenState extends State<TeacherResourcesScreen> {
 
       if (storagePath != null && storagePath.isNotEmpty) {
         try {
+          await _ensureSupabaseSession();
           final supabase = Supabase.instance.client;
           await supabase.storage.from('resources').remove([storagePath]);
         } catch (_) {

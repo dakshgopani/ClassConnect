@@ -47,7 +47,7 @@ class _ConceptReviewScreenState extends State<ConceptReviewScreen> {
       appBar: AppBar(
         title: const Text(
           'Review Syllabus',
-          style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
+          style: TextStyle(fontWeight: FontWeight.bold, color: const Color(0xFF0D1B3D)),
         ),
         backgroundColor: const Color(0xFFF4F8FF),
         elevation: 0,
@@ -58,16 +58,16 @@ class _ConceptReviewScreenState extends State<ConceptReviewScreen> {
           // Header / Instructions
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-            color: const Color(0xFF152349),
+            color: Colors.white,
             child: Row(
               children: [
-                const Icon(Icons.info_outline, color: Colors.cyanAccent),
+                const Icon(Icons.info_outline, color: const Color(0xFF2E6BFF)),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
                     "Review and edit the extracted concepts before generating the project.",
                     style: TextStyle(
-                      color: Colors.white.withOpacity(0.8),
+                      color: const Color(0xFF5C6B8C),
                       fontSize: 13,
                     ),
                   ),
@@ -88,22 +88,22 @@ class _ConceptReviewScreenState extends State<ConceptReviewScreen> {
                 return Container(
                   margin: const EdgeInsets.only(bottom: 16),
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.05),
+                    color: const Color(0xFFF0F4FF),
                     borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: Colors.white.withOpacity(0.1)),
+                    border: Border.all(color: const Color(0x1A2E6BFF)),
                   ),
                   child: Theme(
                     data: Theme.of(
                       context,
                     ).copyWith(dividerColor: Colors.transparent),
                     child: ExpansionTile(
-                      iconColor: Colors.cyanAccent,
-                      collapsedIconColor: Colors.white54,
+                      iconColor: const Color(0xFF2E6BFF),
+                      collapsedIconColor: const Color(0xFF5C6B8C),
                       title: Text(
                         chapterName,
                         style: const TextStyle(
                           fontWeight: FontWeight.bold,
-                          color: Colors.white,
+                          color: const Color(0xFF0D1B3D),
                           fontSize: 16,
                         ),
                       ),
@@ -127,12 +127,12 @@ class _ConceptReviewScreenState extends State<ConceptReviewScreen> {
                             leading: const Icon(
                               Icons.check_circle_outline,
                               size: 16,
-                              color: Colors.cyanAccent,
+                              color: const Color(0xFF2E6BFF),
                             ),
                             title: Text(
                               concept,
                               style: const TextStyle(
-                                color: Colors.white70,
+                                color: const Color(0xFF5C6B8C),
                                 fontSize: 13,
                               ),
                             ),
@@ -202,13 +202,13 @@ class _ConceptReviewScreenState extends State<ConceptReviewScreen> {
                   );
                 },
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.cyanAccent,
+                  backgroundColor: const Color(0xFF2E6BFF),
                   foregroundColor: Colors.black,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(16),
                   ),
                   elevation: 5,
-                  shadowColor: Colors.cyanAccent.withOpacity(0.4),
+                  shadowColor: const Color(0xFF2E6BFF).withOpacity(0.4),
                 ),
                 icon: const Icon(Icons.auto_awesome, size: 22),
                 label: const Text(
@@ -223,3 +223,7 @@ class _ConceptReviewScreenState extends State<ConceptReviewScreen> {
     );
   }
 }
+
+
+
+

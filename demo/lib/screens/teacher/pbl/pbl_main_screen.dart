@@ -162,7 +162,7 @@ class _PblMainScreenState extends State<PblMainScreen> {
                       label: const Text('Generate PBL from Stored Chapters'),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFF2E6BFF),
-                        foregroundColor: Colors.white,
+                        foregroundColor: const Color(0xFF0D1B3D),
                         padding: const EdgeInsets.symmetric(
                           horizontal: 20,
                           vertical: 14,
@@ -262,7 +262,7 @@ class _PblMainScreenState extends State<PblMainScreen> {
       floatingActionButton: FloatingActionButton(
         onPressed: _openConceptReviewFromStoredChapters,
         backgroundColor: const Color(0xFF2E6BFF),
-        foregroundColor: Colors.white,
+        foregroundColor: const Color(0xFF0D1B3D),
         tooltip: 'Create New PBL',
         child: const Icon(Icons.add_task, fontWeight: FontWeight.bold),
       ),
@@ -477,3 +477,9 @@ class _PblMainScreenState extends State<PblMainScreen> {
     );
   }
 }
+
+
+
+
+
+

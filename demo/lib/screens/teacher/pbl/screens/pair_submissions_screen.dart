@@ -143,10 +143,10 @@ class _PairSubmissionsScreenState extends State<PairSubmissionsScreen> {
       final shouldSave = await showDialog<bool>(
         context: context,
         builder: (context) => AlertDialog(
-          backgroundColor: const Color(0xFF152349),
+          backgroundColor: Colors.white,
           title: Text(
             'Mark "$milestone" as Complete?',
-            style: const TextStyle(color: Colors.white, fontSize: 18),
+            style: const TextStyle(color: const Color(0xFF0D1B3D), fontSize: 18),
           ),
           content: Column(
             mainAxisSize: MainAxisSize.min,
@@ -154,16 +154,16 @@ class _PairSubmissionsScreenState extends State<PairSubmissionsScreen> {
             children: [
               const Text(
                 'Enter feedback for the students (optional):',
-                style: TextStyle(color: Colors.white70),
+                style: TextStyle(color: const Color(0xFF5C6B8C)),
               ),
               const SizedBox(height: 12),
               TextField(
                 controller: feedbackController,
                 maxLines: 3,
-                style: const TextStyle(color: Colors.white),
+                style: const TextStyle(color: const Color(0xFF0D1B3D)),
                 decoration: InputDecoration(
                   hintText: 'e.g., Great work on the research...',
-                  hintStyle: const TextStyle(color: Colors.white24),
+                  hintStyle: const TextStyle(color: Color(0xFF5C6B8C)),
                   filled: true,
                   fillColor: Colors.black12,
                   border: OutlineInputBorder(
@@ -179,13 +179,13 @@ class _PairSubmissionsScreenState extends State<PairSubmissionsScreen> {
               onPressed: () => Navigator.pop(context, false), // Cancel
               child: const Text(
                 'Cancel',
-                style: TextStyle(color: Colors.white54),
+                style: TextStyle(color: const Color(0xFF5C6B8C)),
               ),
             ),
             ElevatedButton(
               onPressed: () => Navigator.pop(context, true), // Confirm
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.cyanAccent,
+                backgroundColor: const Color(0xFF2E6BFF),
               ),
               child: const Text(
                 'Confirm',
@@ -390,10 +390,10 @@ class _PairSubmissionsScreenState extends State<PairSubmissionsScreen> {
       builder: (context) => StatefulBuilder(
         builder: (context, setDialogState) {
           return AlertDialog(
-            backgroundColor: const Color(0xFF152349),
+            backgroundColor: Colors.white,
             title: const Text(
               "Edit Milestones",
-              style: TextStyle(color: Colors.white),
+              style: TextStyle(color: const Color(0xFF0D1B3D)),
             ),
             content: SizedBox(
               width: double.maxFinite,
@@ -412,16 +412,16 @@ class _PairSubmissionsScreenState extends State<PairSubmissionsScreen> {
                               Expanded(
                                 child: TextFormField(
                                   initialValue: tempNames[index],
-                                  style: const TextStyle(color: Colors.white),
+                                  style: const TextStyle(color: const Color(0xFF0D1B3D)),
                                   decoration: const InputDecoration(
                                     enabledBorder: UnderlineInputBorder(
                                       borderSide: BorderSide(
-                                        color: Colors.white24,
+                                        color: const Color(0x1A2E6BFF),
                                       ),
                                     ),
                                     focusedBorder: UnderlineInputBorder(
                                       borderSide: BorderSide(
-                                        color: Colors.cyanAccent,
+                                        color: const Color(0xFF2E6BFF),
                                       ),
                                     ),
                                   ),
@@ -452,7 +452,7 @@ class _PairSubmissionsScreenState extends State<PairSubmissionsScreen> {
                     icon: const Icon(Icons.add),
                     label: const Text("Add Milestone"),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.white10,
+                      backgroundColor: const Color(0xFFF0F4FF),
                     ),
                     onPressed: () {
                       setDialogState(() {
@@ -468,11 +468,11 @@ class _PairSubmissionsScreenState extends State<PairSubmissionsScreen> {
                 onPressed: () => Navigator.pop(context),
                 child: const Text(
                   "Cancel",
-                  style: TextStyle(color: Colors.white54),
+                  style: TextStyle(color: const Color(0xFF5C6B8C)),
                 ),
               ),
               ElevatedButton(
-                style: ElevatedButton.styleFrom(backgroundColor: Colors.cyan),
+                style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF2E6BFF)),
                 onPressed: () async {
                   setState(() {
                     _milestoneNames = tempNames;
@@ -522,7 +522,7 @@ class _PairSubmissionsScreenState extends State<PairSubmissionsScreen> {
           style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
         ),
         backgroundColor: const Color(0xFFF4F8FF),
-        foregroundColor: Colors.white,
+        foregroundColor: const Color(0xFF0D1B3D),
         elevation: 0,
         actions: [],
       ),
@@ -586,13 +586,13 @@ class _PairSubmissionsScreenState extends State<PairSubmissionsScreen> {
                             fontSize: 12,
                             fontWeight: FontWeight.bold,
                             letterSpacing: 1.2,
-                            color: Colors.white54,
+                            color: const Color(0xFF5C6B8C),
                           ),
                         ),
                         IconButton(
                           icon: const Icon(
                             Icons.edit,
-                            color: Colors.white54,
+                            color: const Color(0xFF5C6B8C),
                             size: 16,
                           ),
                           onPressed: _editMilestones,
@@ -708,7 +708,7 @@ class _PairSubmissionsScreenState extends State<PairSubmissionsScreen> {
                                                   ? Colors.green.withOpacity(
                                                       0.5,
                                                     )
-                                                  : Colors.white10,
+                                                  : const Color(0xFFF0F4FF),
                                               margin:
                                                   const EdgeInsets.symmetric(
                                                     vertical: 4,
@@ -754,7 +754,7 @@ class _PairSubmissionsScreenState extends State<PairSubmissionsScreen> {
                         Text(
                           "AI Evaluating Submissions...",
                           style: TextStyle(
-                            color: Colors.white,
+                            color: const Color(0xFF0D1B3D),
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
                           ),
@@ -775,9 +775,9 @@ class _PairSubmissionsScreenState extends State<PairSubmissionsScreen> {
       width: double.infinity,
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: const Color(0xFF152349), // Lighter navy
+        color: Colors.white, // Lighter navy
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white10),
+        border: Border.all(color: const Color(0xFFF0F4FF)),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.2),
@@ -793,14 +793,14 @@ class _PairSubmissionsScreenState extends State<PairSubmissionsScreen> {
             children: [
               Icon(
                 Icons.people_alt,
-                color: Colors.cyanAccent.shade200,
+                color: const Color(0xFF2E6BFF),
                 size: 20,
               ),
               const SizedBox(width: 10),
               Text(
                 "TEAM MEMBERS • PAIR #${widget.pairNumber}",
                 style: TextStyle(
-                  color: Colors.cyanAccent.shade200,
+                  color: const Color(0xFF2E6BFF),
                   fontSize: 12,
                   fontWeight: FontWeight.bold,
                   letterSpacing: 1.5,
@@ -820,16 +820,16 @@ class _PairSubmissionsScreenState extends State<PairSubmissionsScreen> {
                   vertical: 8,
                 ),
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.08),
+                  color: const Color(0xFFECF3FF),
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.white12),
+                  border: Border.all(color: const Color(0xFFEAF1FF)),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     CircleAvatar(
                       radius: 14,
-                      backgroundColor: Colors.cyanAccent.shade400,
+                      backgroundColor: const Color(0xFF2E6BFF),
                       child: Text(
                         name.isNotEmpty ? name[0].toUpperCase() : 'U',
                         style: const TextStyle(
@@ -843,7 +843,7 @@ class _PairSubmissionsScreenState extends State<PairSubmissionsScreen> {
                     Text(
                       name,
                       style: const TextStyle(
-                        color: Colors.white,
+                        color: const Color(0xFF0D1B3D),
                         fontWeight: FontWeight.w600,
                         fontSize: 14,
                       ),
@@ -867,12 +867,12 @@ class _PairSubmissionsScreenState extends State<PairSubmissionsScreen> {
     return AnimatedContainer(
       duration: const Duration(milliseconds: 300),
       decoration: BoxDecoration(
-        color: const Color(0xFF152349),
+        color: Colors.white,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
           color: isNext
               ? Colors.orange.withOpacity(0.5)
-              : (isCompleted ? Colors.green.withOpacity(0.3) : Colors.white10),
+              : (isCompleted ? Colors.green.withOpacity(0.3) : const Color(0xFFF0F4FF)),
           width: isNext ? 1.5 : 1,
         ),
         boxShadow: [
@@ -901,7 +901,7 @@ class _PairSubmissionsScreenState extends State<PairSubmissionsScreen> {
                           : FontWeight.w500,
                       color: isCompleted
                           ? Colors.white
-                          : (isNext ? Colors.white : Colors.white38),
+                          : (isNext ? Colors.white : Colors.black38),
                     ),
                   ),
                 ),
@@ -967,9 +967,9 @@ class _PairSubmissionsScreenState extends State<PairSubmissionsScreen> {
                         margin: const EdgeInsets.only(bottom: 8),
                         padding: const EdgeInsets.all(10),
                         decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.05),
+                          color: const Color(0xFFF0F4FF),
                           borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: Colors.white10),
+                          border: Border.all(color: const Color(0xFFF0F4FF)),
                         ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -981,7 +981,7 @@ class _PairSubmissionsScreenState extends State<PairSubmissionsScreen> {
                                   style: const TextStyle(
                                     fontWeight: FontWeight.bold,
                                     fontSize: 12,
-                                    color: Colors.white,
+                                    color: const Color(0xFF0D1B3D),
                                   ),
                                 ),
                                 const Spacer(),
@@ -989,7 +989,7 @@ class _PairSubmissionsScreenState extends State<PairSubmissionsScreen> {
                                   _formatDate(sub['submittedAt']),
                                   style: const TextStyle(
                                     fontSize: 10,
-                                    color: Colors.white38,
+                                    color: Colors.black38,
                                   ),
                                 ),
                               ],
@@ -1013,7 +1013,7 @@ class _PairSubmissionsScreenState extends State<PairSubmissionsScreen> {
                                       sub['fileName'] ?? 'Attachment',
                                       style: const TextStyle(
                                         fontSize: 12,
-                                        color: Colors.cyanAccent,
+                                        color: const Color(0xFF2E6BFF),
                                         decoration: TextDecoration.underline,
                                       ),
                                       maxLines: 1,
@@ -1031,7 +1031,7 @@ class _PairSubmissionsScreenState extends State<PairSubmissionsScreen> {
                                 child: Container(
                                   padding: const EdgeInsets.all(6),
                                   decoration: BoxDecoration(
-                                    color: Colors.cyan.withOpacity(0.1),
+                                    color: const Color(0xFF2E6BFF).withOpacity(0.1),
                                     borderRadius: BorderRadius.circular(6),
                                   ),
                                   child: Row(
@@ -1044,14 +1044,14 @@ class _PairSubmissionsScreenState extends State<PairSubmissionsScreen> {
                                             ? Icons.pause_circle
                                             : Icons.play_circle,
                                         size: 18,
-                                        color: Colors.cyanAccent,
+                                        color: const Color(0xFF2E6BFF),
                                       ),
                                       const SizedBox(width: 6),
                                       const Text(
                                         "Play Explainer",
                                         style: TextStyle(
                                           fontSize: 12,
-                                          color: Colors.cyanAccent,
+                                          color: const Color(0xFF2E6BFF),
                                           fontWeight: FontWeight.bold,
                                         ),
                                       ),
@@ -1125,7 +1125,7 @@ class _PairSubmissionsScreenState extends State<PairSubmissionsScreen> {
                     Text(
                       "AI Evaluation Report",
                       style: TextStyle(
-                        color: Colors.white,
+                        color: const Color(0xFF0D1B3D),
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
                       ),
@@ -1138,13 +1138,13 @@ class _PairSubmissionsScreenState extends State<PairSubmissionsScreen> {
                     vertical: 6,
                   ),
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.2),
+                    color: const Color(0x332E6BFF),
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(
                     "${_evaluationResult!['totalScore']}/100",
                     style: const TextStyle(
-                      color: Colors.white,
+                      color: const Color(0xFF0D1B3D),
                       fontWeight: FontWeight.bold,
                     ),
                   ),
@@ -1156,7 +1156,7 @@ class _PairSubmissionsScreenState extends State<PairSubmissionsScreen> {
             width: double.infinity,
             padding: const EdgeInsets.all(20),
             decoration: const BoxDecoration(
-              color: Color(0xFF152349),
+              color: Colors.white,
               borderRadius: BorderRadius.vertical(bottom: Radius.circular(16)),
             ),
             child: Column(
@@ -1167,7 +1167,7 @@ class _PairSubmissionsScreenState extends State<PairSubmissionsScreen> {
                   style: TextStyle(
                     fontSize: 10,
                     fontWeight: FontWeight.bold,
-                    color: Colors.white54,
+                    color: const Color(0xFF5C6B8C),
                     letterSpacing: 1.2,
                   ),
                 ),
@@ -1177,7 +1177,7 @@ class _PairSubmissionsScreenState extends State<PairSubmissionsScreen> {
                       'No analysis available.',
                   style: const TextStyle(
                     fontSize: 14,
-                    color: Colors.white,
+                    color: const Color(0xFF0D1B3D),
                     height: 1.5,
                   ),
                 ),
@@ -1187,7 +1187,7 @@ class _PairSubmissionsScreenState extends State<PairSubmissionsScreen> {
                   style: TextStyle(
                     fontSize: 10,
                     fontWeight: FontWeight.bold,
-                    color: Colors.white54,
+                    color: const Color(0xFF5C6B8C),
                     letterSpacing: 1.2,
                   ),
                 ),
@@ -1200,7 +1200,7 @@ class _PairSubmissionsScreenState extends State<PairSubmissionsScreen> {
                         decoration: BoxDecoration(
                           color: Colors.black26,
                           borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: Colors.white10),
+                          border: Border.all(color: const Color(0xFFF0F4FF)),
                         ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -1212,14 +1212,14 @@ class _PairSubmissionsScreenState extends State<PairSubmissionsScreen> {
                                   eval['name'],
                                   style: const TextStyle(
                                     fontWeight: FontWeight.bold,
-                                    color: Colors.white,
+                                    color: const Color(0xFF0D1B3D),
                                   ),
                                 ),
                                 Text(
                                   "${eval['score']}/50",
                                   style: const TextStyle(
                                     fontWeight: FontWeight.bold,
-                                    color: Colors.cyanAccent,
+                                    color: const Color(0xFF2E6BFF),
                                   ),
                                 ),
                               ],
@@ -1229,7 +1229,7 @@ class _PairSubmissionsScreenState extends State<PairSubmissionsScreen> {
                               eval['feedback'],
                               style: const TextStyle(
                                 fontSize: 13,
-                                color: Colors.white70,
+                                color: const Color(0xFF5C6B8C),
                               ),
                             ),
                           ],
@@ -1256,3 +1256,8 @@ class _PairSubmissionsScreenState extends State<PairSubmissionsScreen> {
     return '';
   }
 }
+
+
+
+
+

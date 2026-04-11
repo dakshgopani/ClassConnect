@@ -112,18 +112,18 @@ class _ProblemSelectionScreenState extends State<ProblemSelectionScreen> {
                   Container(
                     padding: const EdgeInsets.all(24),
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.05),
+                      color: const Color(0xFFF0F4FF),
                       shape: BoxShape.circle,
                     ),
                     child: const CircularProgressIndicator(
-                      color: Colors.cyanAccent,
+                      color: const Color(0xFF2E6BFF),
                     ),
                   ),
                   const SizedBox(height: 24),
                   const Text(
                     'Generating and saving problem scenarios...',
                     style: TextStyle(
-                      color: Colors.white,
+                      color: const Color(0xFF0D1B3D),
                       fontSize: 16,
                       fontWeight: FontWeight.w500,
                     ),
@@ -132,7 +132,7 @@ class _ProblemSelectionScreenState extends State<ProblemSelectionScreen> {
                   Text(
                     "This may take a few seconds",
                     style: TextStyle(
-                      color: Colors.white.withOpacity(0.5),
+                      color: const Color(0xFF5C6B8C),
                       fontSize: 13,
                     ),
                   ),
@@ -147,12 +147,12 @@ class _ProblemSelectionScreenState extends State<ProblemSelectionScreen> {
                   Icon(
                     Icons.error_outline,
                     size: 60,
-                    color: Colors.white.withOpacity(0.5),
+                    color: const Color(0xFF5C6B8C),
                   ),
                   const SizedBox(height: 16),
                   const Text(
                     'Failed to generate scenarios',
-                    style: TextStyle(color: Colors.white70, fontSize: 16),
+                    style: TextStyle(color: const Color(0xFF5C6B8C), fontSize: 16),
                   ),
                   const SizedBox(height: 24),
                   ElevatedButton(
@@ -161,7 +161,7 @@ class _ProblemSelectionScreenState extends State<ProblemSelectionScreen> {
                       _fetchAndSaveScenarios();
                     },
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.cyanAccent,
+                      backgroundColor: const Color(0xFF2E6BFF),
                       foregroundColor: Colors.black,
                     ),
                     child: const Text("Try Again"),
@@ -177,9 +177,9 @@ class _ProblemSelectionScreenState extends State<ProblemSelectionScreen> {
                 return Container(
                   margin: const EdgeInsets.only(bottom: 16),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF152349),
+                    color: Colors.white,
                     borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: Colors.white.withOpacity(0.1)),
+                    border: Border.all(color: const Color(0x1A2E6BFF)),
                     boxShadow: [
                       BoxShadow(
                         color: Colors.black.withOpacity(0.2),
@@ -202,7 +202,7 @@ class _ProblemSelectionScreenState extends State<ProblemSelectionScreen> {
                                 style: const TextStyle(
                                   fontSize: 18,
                                   fontWeight: FontWeight.bold,
-                                  color: Colors.white,
+                                  color: const Color(0xFF0D1B3D),
                                 ),
                               ),
                             ),
@@ -245,19 +245,19 @@ class _ProblemSelectionScreenState extends State<ProblemSelectionScreen> {
                           scenario['problemStatement'] ?? '',
                           style: TextStyle(
                             fontSize: 15,
-                            color: Colors.white.withOpacity(0.8),
+                            color: const Color(0xFF5C6B8C),
                             height: 1.5,
                           ),
                         ),
                         const SizedBox(height: 16),
-                        Divider(color: Colors.white.withOpacity(0.1)),
+                        Divider(color: const Color(0x1A2E6BFF)),
                         const SizedBox(height: 8),
                         const Align(
                           alignment: Alignment.centerRight,
                           child: Text(
                             'Added to Dashboard',
                             style: TextStyle(
-                              color: Colors.cyanAccent,
+                              color: const Color(0xFF2E6BFF),
                               fontWeight: FontWeight.bold,
                               fontSize: 12,
                             ),
@@ -272,3 +272,7 @@ class _ProblemSelectionScreenState extends State<ProblemSelectionScreen> {
     );
   }
 }
+
+
+
+

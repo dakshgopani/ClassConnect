@@ -78,6 +78,7 @@ class _TeacherTaskScreenState extends State<TeacherTaskScreen>
         toolbarHeight: 0,
         titleSpacing: 0,
         centerTitle: false,
+
         bottom: TabBar(
           controller: _tabController,
           indicatorColor: _accent,
@@ -124,12 +125,6 @@ class _TeacherTaskScreenState extends State<TeacherTaskScreen>
   Widget _buildTasksTab() {
     return Column(
       children: [
-        const SizedBox(height: 12),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: _quickActionsCard(),
-        ),
-        const SizedBox(height: 14),
         // Filter chips
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
@@ -203,231 +198,6 @@ class _TeacherTaskScreenState extends State<TeacherTaskScreen>
     );
   }
 
-  Widget _quickActionsCard() {
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFFFFFFFF), Color(0xFFF5F9FF)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: _surfaceLight),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 18,
-            offset: const Offset(0, 8),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 44,
-            height: 44,
-            decoration: BoxDecoration(
-              color: _accent.withValues(alpha: 0.12),
-              shape: BoxShape.circle,
-            ),
-            child: const Icon(Icons.grid_view_rounded, color: _accent),
-          ),
-          const SizedBox(width: 12),
-          const Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Quick actions',
-                  style: TextStyle(
-                    color: Color(0xFF0D1B3D),
-                    fontSize: 14,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                SizedBox(height: 2),
-                Text(
-                  'Plan new work or send nudges fast.',
-                  style: TextStyle(
-                    color: Color(0xFF5C6B8C),
-                    fontSize: 12,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 10),
-          _actionBubble(
-            icon: Icons.add_rounded,
-            tooltip: 'Plan workload',
-            onTap: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const PlanWorkloadScreen()),
-            ),
-          ),
-          const SizedBox(width: 8),
-          _actionBubble(
-            icon: Icons.notifications_active_outlined,
-            tooltip: 'Send nudges',
-            onTap: () => _showNudgeMenu(context),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _actionBubble({
-    required IconData icon,
-    required String tooltip,
-    required VoidCallback onTap,
-  }) {
-    return Material(
-      color: _accent.withValues(alpha: 0.1),
-      shape: const CircleBorder(),
-      child: Tooltip(
-        message: tooltip,
-        child: InkWell(
-          customBorder: const CircleBorder(),
-          onTap: onTap,
-          child: SizedBox(
-            width: 44,
-            height: 44,
-            child: Icon(icon, color: _accent),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Future<void> _showNudgeMenu(BuildContext context) async {
-    final choice = await showModalBottomSheet<String>(
-      context: context,
-      backgroundColor: Colors.transparent,
-      builder: (sheetContext) {
-        return SafeArea(
-          child: Container(
-            margin: const EdgeInsets.fromLTRB(12, 0, 12, 12),
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(24),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.12),
-                  blurRadius: 24,
-                  offset: const Offset(0, 10),
-                ),
-              ],
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  width: 42,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: _surfaceLight,
-                    borderRadius: BorderRadius.circular(999),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                const Align(
-                  alignment: Alignment.centerLeft,
-                  child: Text(
-                    'Send nudge',
-                    style: TextStyle(
-                      color: Color(0xFF0D1B3D),
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                _nudgeOption(
-                  icon: Icons.wb_sunny_outlined,
-                  title: 'Tomorrow',
-                  subtitle: 'Remind students about work due tomorrow.',
-                  onTap: () => Navigator.pop(sheetContext, 'tomorrow'),
-                ),
-                const SizedBox(height: 10),
-                _nudgeOption(
-                  icon: Icons.date_range_outlined,
-                  title: 'Next 7 days',
-                  subtitle: 'Send a reminder for the upcoming week.',
-                  onTap: () => Navigator.pop(sheetContext, 'next7'),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-
-    if (choice == 'tomorrow') {
-      await _notifService.sendTomorrowNudge(teacherId: _teacherId);
-    } else if (choice == 'next7') {
-      await _notifService.sendNext7DaysNudge(teacherId: _teacherId);
-    }
-  }
-
-  Widget _nudgeOption({
-    required IconData icon,
-    required String title,
-    required String subtitle,
-    required VoidCallback onTap,
-  }) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(18),
-      child: Container(
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          color: _bg,
-          borderRadius: BorderRadius.circular(18),
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 42,
-              height: 42,
-              decoration: BoxDecoration(
-                color: _accent.withValues(alpha: 0.12),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(icon, color: _accent),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: const TextStyle(
-                      color: Color(0xFF0D1B3D),
-                      fontWeight: FontWeight.w700,
-                      fontSize: 14,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    subtitle,
-                    style: const TextStyle(
-                      color: Color(0xFF5C6B8C),
-                      fontSize: 12,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const Icon(Icons.chevron_right_rounded, color: _accent),
-          ],
-        ),
-      ),
-    );
-  }
-
   Widget _emptyTaskState() {
     return Center(
       child: Column(
@@ -496,7 +266,7 @@ class _TeacherTaskScreenState extends State<TeacherTaskScreen>
               Text(
                 _greetingText(),
                 style: const TextStyle(
-                  color: Colors.white,
+                  color: Colors.black,
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
                 ),
@@ -513,7 +283,7 @@ class _TeacherTaskScreenState extends State<TeacherTaskScreen>
                     Text(
                       '$done / $total tasks done',
                       style: const TextStyle(
-                        color: Colors.white70,
+                        color: Colors.black87,
                         fontSize: 14,
                       ),
                     ),
@@ -536,7 +306,10 @@ class _TeacherTaskScreenState extends State<TeacherTaskScreen>
                     const SizedBox(height: 8),
                     Text(
                       'Est ${_formatMins(estMin)} · Actual ${_formatMins(actMin)}',
-                      style: const TextStyle(color: Colors.white, fontSize: 12),
+                      style: const TextStyle(
+                        color: Colors.black54,
+                        fontSize: 12,
+                      ),
                     ),
                   ],
                 ),
@@ -570,7 +343,7 @@ class _TeacherTaskScreenState extends State<TeacherTaskScreen>
           Text(
             '${(rate * 100).toStringAsFixed(0)}%',
             style: const TextStyle(
-              color: Colors.white,
+              color: Colors.black,
               fontWeight: FontWeight.bold,
               fontSize: 16,
             ),
@@ -604,7 +377,7 @@ class _TeacherTaskScreenState extends State<TeacherTaskScreen>
             style: TextStyle(
               fontSize: 15,
               fontWeight: FontWeight.w700,
-              color: Colors.black,
+              color: _surface,
             ),
           ),
         ],
@@ -777,7 +550,7 @@ class _TeacherTaskScreenState extends State<TeacherTaskScreen>
                           ? _surfaceLight
                           : _accentCyan,
                       foregroundColor: task.status == 'completed'
-                          ? Colors.black
+                          ? Colors.white
                           : Colors.black,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(14),
@@ -1088,12 +861,12 @@ class _TeacherTaskScreenState extends State<TeacherTaskScreen>
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.speed, size: 48, color: Colors.grey.shade400),
+                Icon(Icons.speed, size: 48, color: Colors.black.withValues(alpha: 0.1)),
                 const SizedBox(height: 12),
                 Text(
                   'Complete some tasks to see\nyour productivity trends.',
                   textAlign: TextAlign.center,
-                  style: TextStyle(color: Colors.grey.shade600, fontSize: 15),
+                  style: TextStyle(color: Colors.black.withValues(alpha: 0.6), fontSize: 15),
                 ),
               ],
             ),
@@ -1219,7 +992,7 @@ class _TeacherTaskScreenState extends State<TeacherTaskScreen>
                 const Text(
                   'Productivity Score',
                   style: TextStyle(
-                    color: Colors.white70,
+                    color: Colors.black54,
                     fontSize: 13,
                     fontWeight: FontWeight.w500,
                   ),
@@ -1228,7 +1001,7 @@ class _TeacherTaskScreenState extends State<TeacherTaskScreen>
                 Text(
                   label,
                   style: const TextStyle(
-                    color: Colors.white,
+                    color: Colors.black,
                     fontSize: 24,
                     fontWeight: FontWeight.bold,
                   ),
@@ -1254,7 +1027,7 @@ class _TeacherTaskScreenState extends State<TeacherTaskScreen>
             width: 65,
             child: Text(
               label,
-              style: const TextStyle(color: Colors.white, fontSize: 11),
+              style: const TextStyle(color: Colors.black, fontSize: 11),
             ),
           ),
           Expanded(
@@ -1272,7 +1045,7 @@ class _TeacherTaskScreenState extends State<TeacherTaskScreen>
           Text(
             '${(ratio * 100).clamp(0, 200).toStringAsFixed(0)}%',
             style: const TextStyle(
-              color: Colors.white,
+              color: Colors.black,
               fontSize: 11,
               fontWeight: FontWeight.w600,
             ),
@@ -2216,3 +1989,5 @@ class _TeacherTaskScreenState extends State<TeacherTaskScreen>
     }
   }
 }
+
+
