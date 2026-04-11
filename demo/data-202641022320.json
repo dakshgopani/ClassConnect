@@ -1,0 +1,1228 @@
+{
+    "openapi": "3.1.0",
+    "info": {
+        "title": "ClassConnect AI Backend",
+        "version": "1.0.0"
+    },
+    "paths": {
+        "/api/v1/quiz/concept": {
+            "post": {
+                "tags": [
+                    "ai"
+                ],
+                "summary": "Concept Quiz",
+                "operationId": "concept_quiz_api_v1_quiz_concept_post",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ConceptQuizRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/QuizResponse"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/quiz/chapter": {
+            "post": {
+                "tags": [
+                    "ai"
+                ],
+                "summary": "Chapter Quiz",
+                "operationId": "chapter_quiz_api_v1_quiz_chapter_post",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ChapterQuizRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/QuizResponse"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/quiz/diagnostic": {
+            "post": {
+                "tags": [
+                    "ai"
+                ],
+                "summary": "Diagnostic Quiz",
+                "operationId": "diagnostic_quiz_api_v1_quiz_diagnostic_post",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/DiagnosticQuizRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/QuizResponse"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/validation/text": {
+            "post": {
+                "tags": [
+                    "ai"
+                ],
+                "summary": "Validate Text",
+                "operationId": "validate_text_api_v1_validation_text_post",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/TextValidationRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/TextValidationResponse"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/validation/video": {
+            "post": {
+                "tags": [
+                    "ai"
+                ],
+                "summary": "Validate Video",
+                "operationId": "validate_video_api_v1_validation_video_post",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/VideoValidationRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/VideoValidationResponse"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/homework/generate": {
+            "post": {
+                "tags": [
+                    "ai"
+                ],
+                "summary": "Generate Homework",
+                "operationId": "generate_homework_api_v1_homework_generate_post",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/HomeworkGenerateRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HomeworkGenerateResponse"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/homework/evaluate": {
+            "post": {
+                "tags": [
+                    "ai"
+                ],
+                "summary": "Evaluate Homework",
+                "operationId": "evaluate_homework_api_v1_homework_evaluate_post",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/HomeworkEvaluateRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HomeworkEvaluateResponse"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/pbl/chapters-concepts": {
+            "post": {
+                "tags": [
+                    "ai"
+                ],
+                "summary": "Extract Chapters Concepts",
+                "operationId": "extract_chapters_concepts_api_v1_pbl_chapters_concepts_post",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ChaptersConceptsRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ChaptersConceptsResponse"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/pbl/scenarios": {
+            "post": {
+                "tags": [
+                    "ai"
+                ],
+                "summary": "Generate Scenarios",
+                "operationId": "generate_scenarios_api_v1_pbl_scenarios_post",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ScenariosRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ScenariosResponse"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/pbl/project-details": {
+            "post": {
+                "tags": [
+                    "ai"
+                ],
+                "summary": "Project Details",
+                "operationId": "project_details_api_v1_pbl_project_details_post",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ProjectDetailsRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProjectDetailsResponse"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/pbl/extract/pdf": {
+            "post": {
+                "tags": [
+                    "ai"
+                ],
+                "summary": "Extract Pdf Text",
+                "operationId": "extract_pdf_text_api_v1_pbl_extract_pdf_post",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/Base64FileRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/TextExtractResponse"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/pbl/extract/doc": {
+            "post": {
+                "tags": [
+                    "ai"
+                ],
+                "summary": "Extract Doc Text",
+                "operationId": "extract_doc_text_api_v1_pbl_extract_doc_post",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/Base64FileRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/TextExtractResponse"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/pbl/extract/image": {
+            "post": {
+                "tags": [
+                    "ai"
+                ],
+                "summary": "Extract Image Text",
+                "operationId": "extract_image_text_api_v1_pbl_extract_image_post",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/Base64ImageRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/TextExtractResponse"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/health": {
+            "get": {
+                "tags": [
+                    "ai"
+                ],
+                "summary": "Health",
+                "operationId": "health_api_v1_health_get",
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "additionalProperties": true,
+                                    "type": "object",
+                                    "title": "Response Health Api V1 Health Get"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/": {
+            "get": {
+                "summary": "Root",
+                "operationId": "root__get",
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "additionalProperties": true,
+                                    "type": "object",
+                                    "title": "Response Root  Get"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "components": {
+        "schemas": {
+            "Base64FileRequest": {
+                "properties": {
+                    "filename": {
+                        "type": "string",
+                        "title": "Filename"
+                    },
+                    "contentBase64": {
+                        "type": "string",
+                        "title": "Contentbase64"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "filename",
+                    "contentBase64"
+                ],
+                "title": "Base64FileRequest"
+            },
+            "Base64ImageRequest": {
+                "properties": {
+                    "filename": {
+                        "type": "string",
+                        "title": "Filename"
+                    },
+                    "mimeType": {
+                        "type": "string",
+                        "title": "Mimetype"
+                    },
+                    "contentBase64": {
+                        "type": "string",
+                        "title": "Contentbase64"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "filename",
+                    "mimeType",
+                    "contentBase64"
+                ],
+                "title": "Base64ImageRequest"
+            },
+            "ChapterItem": {
+                "properties": {
+                    "name": {
+                        "type": "string",
+                        "title": "Name"
+                    },
+                    "concepts": {
+                        "items": {
+                            "type": "string"
+                        },
+                        "type": "array",
+                        "title": "Concepts"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "name"
+                ],
+                "title": "ChapterItem"
+            },
+            "ChapterQuizRequest": {
+                "properties": {
+                    "chapterName": {
+                        "type": "string",
+                        "title": "Chaptername"
+                    },
+                    "concepts": {
+                        "items": {
+                            "type": "string"
+                        },
+                        "type": "array",
+                        "title": "Concepts"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "chapterName"
+                ],
+                "title": "ChapterQuizRequest"
+            },
+            "ChaptersConceptsRequest": {
+                "properties": {
+                    "syllabusText": {
+                        "type": "string",
+                        "title": "Syllabustext"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "syllabusText"
+                ],
+                "title": "ChaptersConceptsRequest"
+            },
+            "ChaptersConceptsResponse": {
+                "properties": {
+                    "chapters": {
+                        "items": {
+                            "$ref": "#/components/schemas/ChapterItem"
+                        },
+                        "type": "array",
+                        "title": "Chapters"
+                    }
+                },
+                "type": "object",
+                "title": "ChaptersConceptsResponse"
+            },
+            "ConceptQuizRequest": {
+                "properties": {
+                    "conceptName": {
+                        "type": "string",
+                        "title": "Conceptname"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "conceptName"
+                ],
+                "title": "ConceptQuizRequest"
+            },
+            "DiagnosticQuizRequest": {
+                "properties": {
+                    "concepts": {
+                        "items": {
+                            "type": "string"
+                        },
+                        "type": "array",
+                        "title": "Concepts"
+                    }
+                },
+                "type": "object",
+                "title": "DiagnosticQuizRequest"
+            },
+            "HTTPValidationError": {
+                "properties": {
+                    "detail": {
+                        "items": {
+                            "$ref": "#/components/schemas/ValidationError"
+                        },
+                        "type": "array",
+                        "title": "Detail"
+                    }
+                },
+                "type": "object",
+                "title": "HTTPValidationError"
+            },
+            "HomeworkCorrection": {
+                "properties": {
+                    "questionIndex": {
+                        "type": "integer",
+                        "title": "Questionindex"
+                    },
+                    "feedback": {
+                        "type": "string",
+                        "title": "Feedback"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "questionIndex",
+                    "feedback"
+                ],
+                "title": "HomeworkCorrection"
+            },
+            "HomeworkEvaluateRequest": {
+                "properties": {
+                    "qna": {
+                        "items": {
+                            "$ref": "#/components/schemas/HomeworkQnaItem"
+                        },
+                        "type": "array",
+                        "title": "Qna"
+                    },
+                    "attachmentName": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Attachmentname"
+                    }
+                },
+                "type": "object",
+                "title": "HomeworkEvaluateRequest"
+            },
+            "HomeworkEvaluateResponse": {
+                "properties": {
+                    "score": {
+                        "type": "integer",
+                        "title": "Score"
+                    },
+                    "feedback": {
+                        "type": "string",
+                        "title": "Feedback"
+                    },
+                    "corrections": {
+                        "items": {
+                            "$ref": "#/components/schemas/HomeworkCorrection"
+                        },
+                        "type": "array",
+                        "title": "Corrections"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "score",
+                    "feedback"
+                ],
+                "title": "HomeworkEvaluateResponse"
+            },
+            "HomeworkGenerateRequest": {
+                "properties": {
+                    "weakConcepts": {
+                        "items": {
+                            "type": "string"
+                        },
+                        "type": "array",
+                        "title": "Weakconcepts"
+                    },
+                    "className": {
+                        "type": "string",
+                        "title": "Classname"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "className"
+                ],
+                "title": "HomeworkGenerateRequest"
+            },
+            "HomeworkGenerateResponse": {
+                "properties": {
+                    "theory": {
+                        "items": {
+                            "$ref": "#/components/schemas/HomeworkTheoryItem"
+                        },
+                        "type": "array",
+                        "title": "Theory"
+                    }
+                },
+                "type": "object",
+                "title": "HomeworkGenerateResponse"
+            },
+            "HomeworkQnaItem": {
+                "properties": {
+                    "question": {
+                        "type": "string",
+                        "title": "Question"
+                    },
+                    "answer": {
+                        "type": "string",
+                        "title": "Answer"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "question",
+                    "answer"
+                ],
+                "title": "HomeworkQnaItem"
+            },
+            "HomeworkTheoryItem": {
+                "properties": {
+                    "question": {
+                        "type": "string",
+                        "title": "Question"
+                    },
+                    "expectedKeyPoints": {
+                        "items": {
+                            "type": "string"
+                        },
+                        "type": "array",
+                        "title": "Expectedkeypoints"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "question"
+                ],
+                "title": "HomeworkTheoryItem"
+            },
+            "MiniProjectItem": {
+                "properties": {
+                    "title": {
+                        "type": "string",
+                        "title": "Title"
+                    },
+                    "description": {
+                        "type": "string",
+                        "title": "Description"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "title",
+                    "description"
+                ],
+                "title": "MiniProjectItem"
+            },
+            "ProjectDetailsRequest": {
+                "properties": {
+                    "title": {
+                        "type": "string",
+                        "title": "Title"
+                    },
+                    "problemStatement": {
+                        "type": "string",
+                        "title": "Problemstatement"
+                    },
+                    "concepts": {
+                        "items": {
+                            "type": "string"
+                        },
+                        "type": "array",
+                        "title": "Concepts"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "title",
+                    "problemStatement"
+                ],
+                "title": "ProjectDetailsRequest"
+            },
+            "ProjectDetailsResponse": {
+                "properties": {
+                    "title": {
+                        "type": "string",
+                        "title": "Title"
+                    },
+                    "problemStatement": {
+                        "type": "string",
+                        "title": "Problemstatement"
+                    },
+                    "learningObjectives": {
+                        "items": {
+                            "type": "string"
+                        },
+                        "type": "array",
+                        "title": "Learningobjectives"
+                    },
+                    "milestones": {
+                        "items": {
+                            "type": "string"
+                        },
+                        "type": "array",
+                        "title": "Milestones"
+                    },
+                    "rubric": {
+                        "items": {
+                            "additionalProperties": true,
+                            "type": "object"
+                        },
+                        "type": "array",
+                        "title": "Rubric"
+                    },
+                    "miniProjects": {
+                        "items": {
+                            "$ref": "#/components/schemas/MiniProjectItem"
+                        },
+                        "type": "array",
+                        "title": "Miniprojects"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "title",
+                    "problemStatement"
+                ],
+                "title": "ProjectDetailsResponse"
+            },
+            "QuizQuestion": {
+                "properties": {
+                    "question": {
+                        "type": "string",
+                        "title": "Question"
+                    },
+                    "options": {
+                        "items": {
+                            "type": "string"
+                        },
+                        "type": "array",
+                        "title": "Options"
+                    },
+                    "correctAnswer": {
+                        "type": "string",
+                        "title": "Correctanswer"
+                    },
+                    "difficulty": {
+                        "type": "string",
+                        "title": "Difficulty"
+                    },
+                    "concept": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Concept"
+                    },
+                    "chapter": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Chapter"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "question",
+                    "options",
+                    "correctAnswer",
+                    "difficulty"
+                ],
+                "title": "QuizQuestion"
+            },
+            "QuizResponse": {
+                "properties": {
+                    "questions": {
+                        "items": {
+                            "$ref": "#/components/schemas/QuizQuestion"
+                        },
+                        "type": "array",
+                        "title": "Questions"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "questions"
+                ],
+                "title": "QuizResponse"
+            },
+            "ScenarioItem": {
+                "properties": {
+                    "title": {
+                        "type": "string",
+                        "title": "Title"
+                    },
+                    "problemStatement": {
+                        "type": "string",
+                        "title": "Problemstatement"
+                    },
+                    "educationalValue": {
+                        "type": "string",
+                        "title": "Educationalvalue"
+                    },
+                    "miniProjects": {
+                        "items": {
+                            "$ref": "#/components/schemas/MiniProjectItem"
+                        },
+                        "type": "array",
+                        "title": "Miniprojects"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "title",
+                    "problemStatement",
+                    "educationalValue"
+                ],
+                "title": "ScenarioItem"
+            },
+            "ScenariosRequest": {
+                "properties": {
+                    "concepts": {
+                        "items": {
+                            "type": "string"
+                        },
+                        "type": "array",
+                        "title": "Concepts"
+                    }
+                },
+                "type": "object",
+                "title": "ScenariosRequest"
+            },
+            "ScenariosResponse": {
+                "properties": {
+                    "scenarios": {
+                        "items": {
+                            "$ref": "#/components/schemas/ScenarioItem"
+                        },
+                        "type": "array",
+                        "title": "Scenarios"
+                    }
+                },
+                "type": "object",
+                "title": "ScenariosResponse"
+            },
+            "TextExtractResponse": {
+                "properties": {
+                    "text": {
+                        "type": "string",
+                        "title": "Text"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "text"
+                ],
+                "title": "TextExtractResponse"
+            },
+            "TextValidationRequest": {
+                "properties": {
+                    "conceptName": {
+                        "type": "string",
+                        "title": "Conceptname"
+                    },
+                    "explanation": {
+                        "type": "string",
+                        "title": "Explanation"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "conceptName",
+                    "explanation"
+                ],
+                "title": "TextValidationRequest"
+            },
+            "TextValidationResponse": {
+                "properties": {
+                    "isRelevant": {
+                        "type": "boolean",
+                        "title": "Isrelevant"
+                    },
+                    "confidence": {
+                        "type": "number",
+                        "title": "Confidence"
+                    },
+                    "reason": {
+                        "type": "string",
+                        "title": "Reason"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "isRelevant",
+                    "confidence",
+                    "reason"
+                ],
+                "title": "TextValidationResponse"
+            },
+            "ValidationError": {
+                "properties": {
+                    "loc": {
+                        "items": {
+                            "anyOf": [
+                                {
+                                    "type": "string"
+                                },
+                                {
+                                    "type": "integer"
+                                }
+                            ]
+                        },
+                        "type": "array",
+                        "title": "Location"
+                    },
+                    "msg": {
+                        "type": "string",
+                        "title": "Message"
+                    },
+                    "type": {
+                        "type": "string",
+                        "title": "Error Type"
+                    },
+                    "input": {
+                        "title": "Input"
+                    },
+                    "ctx": {
+                        "type": "object",
+                        "title": "Context"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "loc",
+                    "msg",
+                    "type"
+                ],
+                "title": "ValidationError"
+            },
+            "VideoValidationRequest": {
+                "properties": {
+                    "conceptName": {
+                        "type": "string",
+                        "title": "Conceptname"
+                    },
+                    "challengePhrase": {
+                        "type": "string",
+                        "title": "Challengephrase"
+                    },
+                    "transcript": {
+                        "type": "string",
+                        "title": "Transcript"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "conceptName",
+                    "challengePhrase",
+                    "transcript"
+                ],
+                "title": "VideoValidationRequest"
+            },
+            "VideoValidationResponse": {
+                "properties": {
+                    "isRelevant": {
+                        "type": "boolean",
+                        "title": "Isrelevant"
+                    },
+                    "phraseMatched": {
+                        "type": "boolean",
+                        "title": "Phrasematched"
+                    },
+                    "confidence": {
+                        "type": "number",
+                        "title": "Confidence"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "isRelevant",
+                    "phraseMatched",
+                    "confidence"
+                ],
+                "title": "VideoValidationResponse"
+            }
+        }
+    }
+}
