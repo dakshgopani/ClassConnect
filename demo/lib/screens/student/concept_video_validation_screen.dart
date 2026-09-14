@@ -1,8 +1,14 @@
-import 'dart:io';
+import 'dart:io' if (dart.library.html) 'package:demo/services/_file_stub.dart';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:demo/widgets/ui/cc_loading_animation.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:demo/theme/app_colors.dart';
+import 'package:demo/theme/app_spacing.dart';
+import 'package:demo/widgets/ui/cc_button.dart';
+import 'package:demo/widgets/ui/cc_card.dart';
+import 'package:demo/widgets/cc_breadcrumb_bar.dart';
 import '../../../services/gemini_video_validation_service.dart';
 import '../../../services/supabase_video_service.dart';
 import '../../../services/global_xp_service.dart';
@@ -10,6 +16,7 @@ import '../../../services/class_xp_service.dart';
 
 class ConceptVideoValidationScreen extends StatefulWidget {
   final String classId;
+  final String? className;
   final String quizId;
   final String studentId;
   final String studentName;
@@ -19,6 +26,7 @@ class ConceptVideoValidationScreen extends StatefulWidget {
   const ConceptVideoValidationScreen({
     super.key,
     required this.classId,
+    this.className,
     required this.quizId,
     required this.studentId,
     required this.studentName,
@@ -34,6 +42,8 @@ class ConceptVideoValidationScreen extends StatefulWidget {
 class _ConceptVideoValidationScreenState
     extends State<ConceptVideoValidationScreen> {
   File? videoFile;
+  Uint8List? videoBytes;
+  XFile? pickedVideo;
   bool uploading = false;
   late final String challengePhrase;
 
@@ -55,12 +65,19 @@ class _ConceptVideoValidationScreenState
     final picked = await picker.pickVideo(source: ImageSource.camera);
 
     if (picked != null) {
-      setState(() => videoFile = File(picked.path));
+      final bytes = await picked.readAsBytes();
+      setState(() {
+        pickedVideo = picked;
+        videoBytes = bytes;
+        if (picked.path.isNotEmpty) {
+          videoFile = File(picked.path);
+        }
+      });
     }
   }
 
   Future<void> submitVideo() async {
-    if (videoFile == null) return;
+    if (videoFile == null && videoBytes == null) return;
 
     setState(() => uploading = true);
 
@@ -100,7 +117,8 @@ examples, and why it is important.
 
     try {
       videoUrl = await SupabaseVideoService.uploadVideoToSupabase(
-        videoFile: videoFile!,
+        videoFile: videoFile,
+        videoBytes: videoBytes,
         studentId: widget.studentId,
         conceptName: widget.conceptName,
       );
@@ -218,72 +236,120 @@ examples, and why it is important.
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final currentClassName = widget.className ?? 'Class';
+
     return Scaffold(
-      appBar: AppBar(title: Text("Video Validation: ${widget.conceptName}")),
-      body: Padding(
-        padding: const EdgeInsets.all(16),
+      backgroundColor: AppColors.background,
+      body: SafeArea(
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              "Record a 1-minute video explaining the concept.",
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-            ),
-            const SizedBox(height: 16),
-
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.orange.shade50,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.orange),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    "⚠️ Say this sentence clearly in your video:",
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: Colors.orange,
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    "\"$challengePhrase\"",
-                    style: const TextStyle(
-                      fontStyle: FontStyle.italic,
-                      fontSize: 14,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            const SizedBox(height: 24),
-
-            if (videoFile != null)
-              const Center(
-                child: Icon(Icons.check_circle, color: Colors.green, size: 70),
-              )
-            else
-              Center(
-                child: ElevatedButton.icon(
-                  icon: const Icon(Icons.videocam),
-                  label: const Text("Record Video"),
-                  onPressed: pickVideo,
+            CCBreadcrumbBar(
+              items: [
+                BreadcrumbItem(
+                  label: 'Classes',
+                  onTap: () {
+                    Navigator.of(context).popUntil((route) => route.isFirst);
+                  },
                 ),
-              ),
-
-            const Spacer(),
-
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: uploading ? null : submitVideo,
-                child: uploading
-                    ? const CcLoadingAnimation()
-                    : const Text("Submit Video"),
+                BreadcrumbItem(
+                  label: currentClassName,
+                  onTap: () {
+                    Navigator.of(context).pop();
+                  },
+                ),
+                BreadcrumbItem(
+                  label: 'Quizzes',
+                  onTap: () {
+                    Navigator.of(context).pop();
+                  },
+                ),
+                BreadcrumbItem(label: 'Video Validation: ${widget.conceptName}'),
+              ],
+            ),
+            Expanded(
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 850),
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.all(AppSpacing.lg),
+                    child: CcCard(
+                      padding: const EdgeInsets.all(AppSpacing.xl),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            "Record a 1-minute video explaining the concept.",
+                            style: theme.textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.textPrimary,
+                            ),
+                          ),
+                          const SizedBox(height: AppSpacing.lg),
+                          Container(
+                            padding: const EdgeInsets.all(AppSpacing.md),
+                            decoration: BoxDecoration(
+                              color: AppColors.warning.withValues(alpha: 0.12),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: AppColors.warning.withValues(alpha: 0.4),
+                              ),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text(
+                                  "⚠️ Say this sentence clearly in your video:",
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    color: AppColors.warning,
+                                  ),
+                                ),
+                                const SizedBox(height: 6),
+                                Text(
+                                  "\"$challengePhrase\"",
+                                  style: const TextStyle(
+                                    fontStyle: FontStyle.italic,
+                                    fontSize: 14,
+                                    color: AppColors.textPrimary,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: AppSpacing.xl),
+                          if (videoFile != null)
+                            const Center(
+                              child: Icon(Icons.check_circle_rounded, color: AppColors.success, size: 70),
+                            )
+                          else
+                            Center(
+                              child: CcButton(
+                                icon: const Icon(Icons.videocam_rounded, color: Colors.white),
+                                label: "Record Video",
+                                onPressed: pickVideo,
+                              ),
+                            ),
+                          const SizedBox(height: AppSpacing.xxl),
+                          SizedBox(
+                            width: double.infinity,
+                            child: CcButton(
+                              onPressed: uploading ? null : submitVideo,
+                              label: uploading ? "Submitting Video..." : "Submit Video",
+                              icon: uploading
+                                  ? const SizedBox(
+                                      height: 18,
+                                      width: 18,
+                                      child: CcLoadingAnimation(strokeWidth: 2),
+                                    )
+                                  : const Icon(Icons.check_circle_rounded, color: Colors.white),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
               ),
             ),
           ],

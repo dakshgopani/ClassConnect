@@ -3,11 +3,17 @@ import 'package:demo/widgets/ui/cc_loading_animation.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../../utils/date_utils.dart';
+import 'package:demo/widgets/cc_breadcrumb_bar.dart';
 
 class StudentAttendanceScreen extends StatelessWidget {
   final String classId;
+  final String? className;
 
-  const StudentAttendanceScreen({super.key, required this.classId});
+  const StudentAttendanceScreen({
+    super.key,
+    required this.classId,
+    this.className,
+  });
 
   static const Color _bg = Color(0xFFF4F8FF);
   static const Color _primary = Color(0xFF2E6BFF);
@@ -16,29 +22,35 @@ class StudentAttendanceScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final classTitle = className ?? 'Class';
     return Scaffold(
       backgroundColor: _bg,
-      appBar: AppBar(
-        backgroundColor: _bg,
-        title: const Text(
-          'My Attendance',
-          style: TextStyle(color: _textPrimary),
-        ),
-        leading: IconButton(
-          icon: const Icon(
-            Icons.arrow_back_ios_new_rounded,
-            color: _textPrimary,
+      body: Column(
+        children: [
+          CCBreadcrumbBar(
+            items: [
+              BreadcrumbItem(
+                label: 'Classes',
+                icon: Icons.school_rounded,
+                onTap: () => Navigator.of(context).popUntil((route) => route.isFirst),
+              ),
+              BreadcrumbItem(
+                label: classTitle,
+                onTap: () => Navigator.pop(context),
+              ),
+              const BreadcrumbItem(label: 'Attendance'),
+            ],
           ),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
-        centerTitle: true,
-      ),
-      body: FutureBuilder<Map<String, dynamic>>(
-        future: _loadAttendanceDashboard(),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CcLoadingAnimation(color: _primary));
-          }
+          Expanded(
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 1000),
+                child: FutureBuilder<Map<String, dynamic>>(
+                  future: _loadAttendanceDashboard(),
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return const Center(child: CcLoadingAnimation(color: _primary));
+                    }
 
           if (snapshot.hasError) {
             return Center(
@@ -149,8 +161,13 @@ class StudentAttendanceScreen extends StatelessWidget {
           );
         },
       ),
-    );
-  }
+    ),
+  ),
+),
+],
+),
+);
+}
 
   Future<Map<String, dynamic>> _loadAttendanceDashboard() async {
     final user = FirebaseAuth.instance.currentUser;

@@ -121,6 +121,454 @@ class _PlanWorkloadScreenState extends State<PlanWorkloadScreen>
 
   @override
   Widget build(BuildContext context) {
+    final isDesktop = MediaQuery.of(context).size.width >= 800;
+
+    if (isDesktop) {
+      return _buildDesktopLayout();
+    }
+
+    return _buildMobileLayout();
+  }
+
+  Widget _buildDesktopLayout() {
+    return Scaffold(
+      backgroundColor: const Color(0xFFF8FAFC),
+      body: Row(
+        children: [
+          _buildSidebar(),
+          Expanded(
+            child: _buildDesktopContent(),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSidebar() {
+    return Container(
+      width: 280,
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Color(0xFF1E293B), Color(0xFF0F172A)],
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+        ),
+      ),
+      child: Column(
+        children: [
+          const SizedBox(height: 24),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: Row(
+              children: [
+                Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFF3B82F6), Color(0xFF60A5FA)],
+                    ),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Icon(Icons.edit_calendar, color: Colors.white, size: 22),
+                ),
+                const SizedBox(width: 12),
+                const Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Plan Workload',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      Text(
+                        'Schedule tasks ahead',
+                        style: TextStyle(color: Color(0xFF64748B), fontSize: 12),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 24),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: const Color(0xFF1E293B),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: const Color(0xFF334155)),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Mode',
+                    style: TextStyle(color: Color(0xFF64748B), fontSize: 11, fontWeight: FontWeight.w600),
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Icon(
+                        _planWeekly ? Icons.repeat : Icons.calendar_today,
+                        color: _planWeekly ? const Color(0xFF06B6D4) : const Color(0xFF3B82F6),
+                        size: 16,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        _planWeekly ? 'Weekly' : 'Single day',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const Spacer(),
+          const Padding(
+            padding: EdgeInsets.all(20),
+            child: Text(
+              'Plan tasks in advance\nto reduce stress.',
+              style: TextStyle(color: Color(0xFF64748B), fontSize: 11),
+              textAlign: TextAlign.center,
+            ),
+          ),
+          const SizedBox(height: 16),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDesktopContent() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(40),
+      child: Form(
+        key: _formKey,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Plan Your Workload',
+                        style: TextStyle(
+                          color: Color(0xFF1E293B),
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Block focused time and stay ahead of deadlines.',
+                        style: TextStyle(
+                          color: const Color(0xFF64748B),
+                          fontSize: 14,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 40),
+                Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFF667EEA), Color(0xFF764BA2)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFF667EEA).withValues(alpha: 0.3),
+                        blurRadius: 12,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      _desktopStatPill(Icons.calendar_today, _readableDate(_selectedDate)),
+                      const SizedBox(height: 8),
+                      _desktopStatPill(Icons.repeat, _planWeekly ? 'Weekly' : 'Single day'),
+                      const SizedBox(height: 8),
+                      _desktopStatPill(Icons.timer, _formatMins(_estimatedMinutes)),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 32),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  flex: 2,
+                  child: Column(
+                    children: [
+                      _sectionCard(
+                        icon: Icons.bolt,
+                        title: 'Quick Start',
+                        children: [_quickTemplatesSectionDesktop()],
+                      ),
+                      const SizedBox(height: 16),
+                      _sectionCard(
+                        icon: Icons.edit_note,
+                        title: 'Task Details',
+                        children: [
+                          _buildTitleField(),
+                          const SizedBox(height: 14),
+                          _taskTypeSelector(),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 20),
+                Expanded(
+                  flex: 1,
+                  child: Column(
+                    children: [
+                      _sectionCard(
+                        icon: Icons.timer_outlined,
+                        title: 'Effort',
+                        children: [_buildMinutesSlider()],
+                      ),
+                      const SizedBox(height: 16),
+                      _sectionCard(
+                        icon: Icons.calendar_month,
+                        title: 'Schedule',
+                        children: [
+                          _buildDatePicker(),
+                          const SizedBox(height: 12),
+                          _buildWeeklyToggle(),
+                          if (_planWeekly) ...[
+                            const SizedBox(height: 12),
+                            _weekdaySelector(),
+                          ],
+                          const SizedBox(height: 12),
+                          _buildDueDatePicker(),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      _sectionCard(
+                        icon: Icons.flag_outlined,
+                        title: 'Priority',
+                        children: [_prioritySelector()],
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 20),
+            _reviewSummaryDesktop(),
+            const SizedBox(height: 24),
+            _submitButton(),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _desktopStatPill(IconData icon, String label) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.2),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 14, color: Colors.white),
+          const SizedBox(width: 6),
+          Text(
+            label,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _quickTemplatesSectionDesktop() {
+    return SizedBox(
+      height: 90,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        itemCount: _templates.length,
+        separatorBuilder: (_, i) => const SizedBox(width: 10),
+        itemBuilder: (context, i) => _templateCardDesktop(_templates[i]),
+      ),
+    );
+  }
+
+  Widget _templateCardDesktop(_TaskTemplate t) {
+    final isSelected = _taskType == t.type;
+    return GestureDetector(
+      onTap: () {
+        HapticFeedback.lightImpact();
+        setState(() {
+          _taskType = t.type;
+          _estimatedMinutes = t.minutes;
+          _minutesController.text = t.minutes.toString();
+          _priority = t.priority;
+          _titleController.text = t.label;
+        });
+      },
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        width: 100,
+        padding: const EdgeInsets.all(10),
+        decoration: BoxDecoration(
+          color: isSelected ? _accent : _surface,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+            color: isSelected ? _accent : _surfaceLight,
+            width: isSelected ? 2 : 1,
+          ),
+          boxShadow: isSelected
+              ? [
+                  BoxShadow(
+                    color: _accent.withValues(alpha: 0.3),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ]
+              : [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.08),
+                    blurRadius: 6,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(t.emoji, style: const TextStyle(fontSize: 20)),
+            const Spacer(),
+            Text(
+              t.label,
+              style: TextStyle(
+                color: isSelected ? Colors.white : const Color(0xFF0D1B3D),
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+            Text(
+              '${t.minutes}m',
+              style: TextStyle(
+                color: isSelected ? Colors.white60 : const Color(0xFF8DA6D8),
+                fontSize: 10,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _reviewSummaryDesktop() {
+    final selectedDayCount = _weekDays.values.where((v) => v).length;
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: _accent.withValues(alpha: 0.25)),
+        boxShadow: [
+          BoxShadow(
+            color: _accent.withValues(alpha: 0.06),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: _accent.withValues(alpha: 0.15),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: const Icon(Icons.checklist, color: _accent, size: 18),
+          ),
+          const SizedBox(width: 12),
+          const Text(
+            'Review before adding:',
+            style: TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.bold,
+              color: Color(0xFF1E293B),
+            ),
+          ),
+          const SizedBox(width: 24),
+          _desktopReviewItem(Icons.event, _readableDate(_selectedDate)),
+          const SizedBox(width: 16),
+          _desktopReviewItem(
+            Icons.repeat,
+            _planWeekly ? 'Weekly ($selectedDayCount days)' : 'Single day',
+          ),
+          const SizedBox(width: 16),
+          _desktopReviewItem(Icons.timer, _formatMins(_estimatedMinutes)),
+          const SizedBox(width: 16),
+          _desktopReviewItem(
+            Icons.flag,
+            '${_priority[0].toUpperCase()}${_priority.substring(1)}',
+          ),
+          if (_dueDate != null) ...[
+            const SizedBox(width: 16),
+            _desktopReviewItem(Icons.event_available, _readableDate(_dueDate!)),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _desktopReviewItem(IconData icon, String value) {
+    return Row(
+      children: [
+        Icon(icon, size: 14, color: const Color(0xFF64748B)),
+        const SizedBox(width: 4),
+        Text(
+          value,
+          style: const TextStyle(
+            color: Color(0xFF1E293B),
+            fontWeight: FontWeight.w600,
+            fontSize: 13,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildMobileLayout() {
     return Scaffold(
       backgroundColor: _bg,
       body: CustomScrollView(
@@ -213,41 +661,47 @@ class _PlanWorkloadScreenState extends State<PlanWorkloadScreen>
                 end: Alignment.bottomRight,
               ),
             ),
-            padding: const EdgeInsets.fromLTRB(24, 100, 24, 20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                const Text(
-                  'Plan Your Workload',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 22,
-                    fontWeight: FontWeight.bold,
+            padding: const EdgeInsets.fromLTRB(24, 100, 24, 24),
+            child: SingleChildScrollView(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(minHeight: 120),
+                child: IntrinsicHeight(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Plan Your Workload',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 22,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Block focused time and stay ahead of deadlines.',
+                        style: TextStyle(
+                          color: Colors.white.withValues(alpha: 0.8),
+                          fontSize: 13,
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 6,
+                        children: [
+                          _heroPill(
+                            Icons.calendar_today,
+                            _readableDate(_selectedDate),
+                          ),
+                          _heroPill(Icons.repeat, modeLabel),
+                          _heroPill(Icons.timer, _formatMins(_estimatedMinutes)),
+                        ],
+                      ),
+                    ],
                   ),
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  'Block focused time and stay ahead of deadlines.',
-                  style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.8),
-                    fontSize: 13,
-                  ),
-                ),
-                const SizedBox(height: 10),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 6,
-                  children: [
-                    _heroPill(
-                      Icons.calendar_today,
-                      _readableDate(_selectedDate),
-                    ),
-                    _heroPill(Icons.repeat, modeLabel),
-                    _heroPill(Icons.timer, _formatMins(_estimatedMinutes)),
-                  ],
-                ),
-              ],
+              ),
             ),
           ),
         ),

@@ -57,22 +57,24 @@ class DefaultFirebaseOptions {
     projectId: 'hacksync-8c13e',
     storageBucket: 'hacksync-8c13e.firebasestorage.app',
   );
-
   static const FirebaseOptions ios = FirebaseOptions(
     apiKey: 'AIzaSyCbhTYY2ZCPpEjjUpU6rAEPIrnQgEsWRas',
     appId: '1:356570946417:ios:7fb7040eec63a8781534d0',
     messagingSenderId: '356570946417',
     projectId: 'hacksync-8c13e',
     storageBucket: 'hacksync-8c13e.firebasestorage.app',
+    androidClientId: '356570946417-268p703vs40ckb1fonfm7b1vvjlqg0l2.apps.googleusercontent.com',
+    iosClientId: '356570946417-usbs8693kkbevtb2alv1fei65rg9jc7j.apps.googleusercontent.com',
     iosBundleId: 'com.example.demo',
   );
-
   static const FirebaseOptions macos = FirebaseOptions(
     apiKey: 'AIzaSyCbhTYY2ZCPpEjjUpU6rAEPIrnQgEsWRas',
     appId: '1:356570946417:ios:7fb7040eec63a8781534d0',
     messagingSenderId: '356570946417',
     projectId: 'hacksync-8c13e',
     storageBucket: 'hacksync-8c13e.firebasestorage.app',
+    androidClientId: '356570946417-268p703vs40ckb1fonfm7b1vvjlqg0l2.apps.googleusercontent.com',
+    iosClientId: '356570946417-usbs8693kkbevtb2alv1fei65rg9jc7j.apps.googleusercontent.com',
     iosBundleId: 'com.example.demo',
   );
 

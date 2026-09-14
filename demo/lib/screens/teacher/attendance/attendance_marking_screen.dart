@@ -4,11 +4,13 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:intl/intl.dart';
 
 import '../../../services/attendance_service.dart';
+import '../../../widgets/cc_breadcrumb_bar.dart';
 
 class AttendanceMarkingScreen extends StatefulWidget {
   final String classId;
+  final String? className;
 
-  const AttendanceMarkingScreen({super.key, required this.classId});
+  const AttendanceMarkingScreen({super.key, required this.classId, this.className});
 
   @override
   State<AttendanceMarkingScreen> createState() =>
@@ -107,6 +109,12 @@ class _AttendanceMarkingScreenState extends State<AttendanceMarkingScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDesktop = MediaQuery.of(context).size.width >= 800;
+
+    if (isDesktop) {
+      return _buildDesktopLayout();
+    }
+
     return Scaffold(
       backgroundColor: _themeColor,
       appBar: AppBar(
@@ -426,6 +434,398 @@ class _AttendanceMarkingScreenState extends State<AttendanceMarkingScreen> {
                         : Colors.white,
                   ),
                 ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDesktopLayout() {
+    final currentClassName = widget.className ?? 'Class';
+    return Scaffold(
+      backgroundColor: const Color(0xFFF8FAFC),
+      body: Column(
+        children: [
+          CCBreadcrumbBar(
+            items: [
+              BreadcrumbItem(
+                label: 'Classes',
+                onTap: () => Navigator.of(context).popUntil((route) => route.isFirst),
+              ),
+              BreadcrumbItem(
+                label: currentClassName,
+                onTap: () => Navigator.pop(context),
+              ),
+              const BreadcrumbItem(
+                label: 'Attendance',
+              ),
+            ],
+            actions: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                decoration: BoxDecoration(
+                  color: _alreadySubmitted
+                      ? Colors.amber.withValues(alpha: 0.1)
+                      : const Color(0xFF10B981).withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                    color: _alreadySubmitted
+                        ? Colors.amber.withValues(alpha: 0.3)
+                        : const Color(0xFF10B981).withValues(alpha: 0.3),
+                  ),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      _alreadySubmitted ? Icons.lock : Icons.check_circle_outline,
+                      color: _alreadySubmitted ? Colors.amber.shade800 : const Color(0xFF10B981),
+                      size: 16,
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      _alreadySubmitted ? 'Locked Today' : 'Ready to Mark',
+                      style: TextStyle(
+                        color: _alreadySubmitted ? Colors.amber.shade800 : const Color(0xFF10B981),
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          Expanded(
+            child: _buildDesktopContent(),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDesktopContent() {
+    return Column(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            border: Border.all(color: const Color(0xFFE2E8F0)),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFF3B82F6).withValues(alpha: 0.04),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Mark Attendance',
+                      style: TextStyle(
+                        color: Color(0xFF1E293B),
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      _todayLabel,
+                      style: const TextStyle(
+                        color: Color(0xFF64748B),
+                        fontSize: 14,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                decoration: BoxDecoration(
+                  color: _alreadySubmitted
+                      ? Colors.amber.withValues(alpha: 0.1)
+                      : const Color(0xFF3B82F6).withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                    color: _alreadySubmitted
+                        ? Colors.amber.withValues(alpha: 0.3)
+                        : const Color(0xFF3B82F6).withValues(alpha: 0.3),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      _alreadySubmitted ? Icons.lock : Icons.info,
+                      color: _alreadySubmitted ? Colors.amber : const Color(0xFF3B82F6),
+                      size: 16,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      _alreadySubmitted ? 'Submitted' : 'Pending',
+                      style: TextStyle(
+                        color: _alreadySubmitted ? Colors.amber : const Color(0xFF3B82F6),
+                        fontWeight: FontWeight.w600,
+                        fontSize: 13,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+        Expanded(
+          child: StreamBuilder<QuerySnapshot>(
+            stream: _studentsStream(),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Center(
+                  child: CircularProgressIndicator(
+                    color: Color(0xFF3B82F6),
+                  ),
+                );
+              }
+
+              if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                return Center(
+                  child: Text(
+                    'No students found',
+                    style: TextStyle(color: const Color(0xFF64748B)),
+                  ),
+                );
+              }
+
+              final students = snapshot.data!.docs;
+
+              if (!_initialized) {
+                for (var doc in students) {
+                  _presentStudentIds.add(doc['studentId']);
+                }
+                _initialized = true;
+              }
+
+              return SingleChildScrollView(
+                padding: const EdgeInsets.all(24),
+                child: Align(
+                  alignment: Alignment.topCenter,
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 1100),
+                    child: Column(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: _alreadySubmitted
+                            ? Colors.white
+                            : const Color(0xFF3B82F6).withValues(alpha: 0.08),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: _alreadySubmitted
+                              ? const Color(0xFFE2E8F0)
+                              : const Color(0xFF3B82F6).withValues(alpha: 0.22),
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            _alreadySubmitted ? Icons.lock_outline : Icons.info_outline,
+                            color: _alreadySubmitted
+                                ? const Color(0xFF64748B)
+                                : const Color(0xFF3B82F6),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              _alreadySubmitted
+                                  ? 'Attendance submitted. Record is locked.'
+                                  : 'Tap checkbox to toggle. Unticked = Absent.',
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: _alreadySubmitted
+                                    ? const Color(0xFF64748B)
+                                    : const Color(0xFF3B82F6),
+                                height: 1.4,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    GridView.builder(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: 3,
+                        childAspectRatio: 2.2,
+                        crossAxisSpacing: 16,
+                        mainAxisSpacing: 16,
+                      ),
+                      itemCount: students.length,
+                      itemBuilder: (context, index) {
+                        final student = students[index];
+                        final String studentId = student['studentId'];
+                        return _buildDesktopStudentCard(studentId);
+                      },
+                    ),
+                    const SizedBox(height: 24),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        _buildSaveButtonDesktop(students.map((doc) => doc['studentId'] as String).toList()),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildDesktopStudentCard(String studentId) {
+    return FutureBuilder<DocumentSnapshot>(
+      future: FirebaseFirestore.instance
+          .collection('students')
+          .doc(studentId)
+          .get(),
+      builder: (context, snap) {
+        if (snap.connectionState == ConnectionState.waiting) {
+          return Container(
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.5),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: const Color(0xFFE2E8F0)),
+            ),
+          );
+        }
+
+        if (!snap.hasData || !snap.data!.exists) {
+          return const SizedBox.shrink();
+        }
+
+        final data = snap.data!.data() as Map<String, dynamic>;
+        final String name = data['name'] ?? 'Student';
+        final String? photoURL = data['photoURL'];
+        final bool isPresent = _presentStudentIds.contains(studentId);
+
+        return Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: isPresent
+                  ? const Color(0xFF3B82F6).withValues(alpha: 0.3)
+                  : Colors.red.withValues(alpha: 0.3),
+              width: 1.5,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFF3B82F6).withValues(alpha: 0.04),
+                blurRadius: 6,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          padding: const EdgeInsets.all(12),
+          child: Row(
+            children: [
+              CircleAvatar(
+                radius: 20,
+                backgroundColor: const Color(0xFF3B82F6).withValues(alpha: 0.1),
+                backgroundImage: photoURL != null ? NetworkImage(photoURL) : null,
+                child: photoURL == null
+                    ? Text(
+                        name.isNotEmpty ? name[0].toUpperCase() : '?',
+                        style: const TextStyle(
+                          color: Color(0xFF3B82F6),
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                        ),
+                      )
+                    : null,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  name,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontWeight: FontWeight.w600,
+                    color: const Color(0xFF1E293B),
+                    fontSize: 13,
+                    decoration: !isPresent && !_alreadySubmitted
+                        ? TextDecoration.lineThrough
+                        : null,
+                    decorationColor: const Color(0xFF64748B),
+                  ),
+                ),
+              ),
+              Transform.scale(
+                scale: 1.1,
+                child: Checkbox(
+                  activeColor: const Color(0xFF3B82F6),
+                  checkColor: Colors.white,
+                  side: BorderSide(
+                    color: Colors.white.withValues(alpha: 0.5),
+                    width: 2,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  value: isPresent,
+                  onChanged: _alreadySubmitted
+                      ? null
+                      : (val) => _togglePresent(studentId, val ?? false),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildSaveButtonDesktop(List<String> allStudentIds) {
+    return ElevatedButton.icon(
+      onPressed: _alreadySubmitted || _isSubmitting
+          ? null
+          : () => _saveAttendance(allStudentIds),
+      icon: _isSubmitting
+          ? const SizedBox(
+              width: 18,
+              height: 18,
+              child: CircularProgressIndicator(
+                color: Colors.white,
+                strokeWidth: 2,
+              ),
+            )
+          : const Icon(Icons.check, size: 18),
+      label: Text(
+        _alreadySubmitted ? 'Submitted' : 'Save Attendance',
+        style: TextStyle(
+          fontSize: 14,
+          fontWeight: FontWeight.bold,
+          color: _alreadySubmitted ? const Color(0xFF64748B) : Colors.white,
+        ),
+      ),
+      style: ElevatedButton.styleFrom(
+        backgroundColor: const Color(0xFF3B82F6),
+        disabledBackgroundColor: const Color(0xFFE2E8F0),
+        foregroundColor: _alreadySubmitted ? const Color(0xFF64748B) : Colors.white,
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(10),
         ),
       ),
     );

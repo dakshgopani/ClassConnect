@@ -1,0 +1,1 @@
+// Mobile implementation of permission service (wraps permission_handler)\nimport 'package:permission_handler/permission_handler.dart';\n\nclass PlatformPermissionService {\n  static Future<PermissionStatus> checkPermission(Permission permission) async {\n    return await permission.request();\n  }\n}\n

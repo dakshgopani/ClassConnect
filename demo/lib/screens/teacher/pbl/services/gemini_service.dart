@@ -1,5 +1,6 @@
 import 'dart:convert';
-import 'dart:io';
+import 'dart:io' if (dart.library.html) 'package:demo/services/_file_stub.dart';
+import 'dart:typed_data';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
@@ -167,12 +168,11 @@ class GeminiService {
     }
   }
 
-  /// Extract text from PDF file
-  static Future<String> extractTextFromPdf(File file) async {
+  /// Extract text from PDF bytes
+  static Future<String> extractTextFromPdfBytes(Uint8List bytes, String filename) async {
     try {
-      final bytes = await file.readAsBytes();
       final body = await _postJson(_extractPdfUrl, {
-        'filename': _fileName(file),
+        'filename': filename,
         'contentBase64': base64Encode(bytes),
       });
       return _toStringValue(body['text']).trim();
@@ -182,13 +182,23 @@ class GeminiService {
     }
   }
 
-  /// Extract text from image
-  static Future<String> extractTextFromImage(File file) async {
+  /// Extract text from PDF file
+  static Future<String> extractTextFromPdf(File file) async {
     try {
       final bytes = await file.readAsBytes();
+      return extractTextFromPdfBytes(bytes, _fileName(file));
+    } catch (e) {
+      debugPrint('PDF extraction error: $e');
+      return '';
+    }
+  }
+
+  /// Extract text from image bytes
+  static Future<String> extractTextFromImageBytes(Uint8List bytes, String filename) async {
+    try {
       final body = await _postJson(_extractImageUrl, {
-        'filename': _fileName(file),
-        'mimeType': _imageMimeType(file),
+        'filename': filename,
+        'mimeType': _imageMimeTypeFromName(filename),
         'contentBase64': base64Encode(bytes),
       });
       return _toStringValue(body['text']).trim();
@@ -198,15 +208,36 @@ class GeminiService {
     }
   }
 
+  /// Extract text from image file
+  static Future<String> extractTextFromImage(File file) async {
+    try {
+      final bytes = await file.readAsBytes();
+      return extractTextFromImageBytes(bytes, _fileName(file));
+    } catch (e) {
+      debugPrint('Image extraction error: $e');
+      return '';
+    }
+  }
+
+  /// Extract text from DOC/DOCX bytes
+  static Future<String> extractTextFromDocBytes(Uint8List bytes, String filename) async {
+    try {
+      final body = await _postJson(_extractDocUrl, {
+        'filename': filename,
+        'contentBase64': base64Encode(bytes),
+      });
+      return _toStringValue(body['text']).trim();
+    } catch (e) {
+      debugPrint('DOC extraction error: $e');
+      return '';
+    }
+  }
+
   /// Extract text from DOC/DOCX file
   static Future<String> extractTextFromDoc(File file) async {
     try {
       final bytes = await file.readAsBytes();
-      final body = await _postJson(_extractDocUrl, {
-        'filename': _fileName(file),
-        'contentBase64': base64Encode(bytes),
-      });
-      return _toStringValue(body['text']).trim();
+      return extractTextFromDocBytes(bytes, _fileName(file));
     } catch (e) {
       debugPrint('DOC extraction error: $e');
       return '';
@@ -236,12 +267,16 @@ class GeminiService {
     return parts.isNotEmpty ? parts.last : 'file';
   }
 
-  static String _imageMimeType(File file) {
-    final lower = file.path.toLowerCase();
+  static String _imageMimeTypeFromName(String filename) {
+    final lower = filename.toLowerCase();
     if (lower.endsWith('.png')) return 'image/png';
     if (lower.endsWith('.webp')) return 'image/webp';
     if (lower.endsWith('.jpg') || lower.endsWith('.jpeg')) return 'image/jpeg';
     return 'image/jpeg';
+  }
+
+  static String _imageMimeType(File file) {
+    return _imageMimeTypeFromName(file.path);
   }
 
   /// Helper to safely convert any value to String

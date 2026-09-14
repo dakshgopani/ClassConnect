@@ -3,9 +3,10 @@ import 'package:demo/widgets/ui/cc_loading_animation.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'screens/concept_review_screen.dart';
 import 'screens/pbl_detail_screen.dart';
-import 'screens/pbl_editor_screen.dart';
 import 'screens/class_mini_projects_screen.dart';
+import 'screens/pbl_editor_screen.dart';
 import 'models/pbl_project.dart';
+import '../../../widgets/cc_breadcrumb_bar.dart';
 
 class PblMainScreen extends StatefulWidget {
   final String classId;
@@ -63,8 +64,11 @@ class _PblMainScreenState extends State<PblMainScreen> {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) =>
-            ConceptReviewScreen(syllabus: syllabus, classId: widget.classId),
+        builder: (context) => ConceptReviewScreen(
+          syllabus: syllabus,
+          classId: widget.classId,
+          className: widget.className,
+        ),
       ),
     );
   }
@@ -82,6 +86,328 @@ class _PblMainScreenState extends State<PblMainScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDesktop = MediaQuery.of(context).size.width >= 800;
+
+    if (isDesktop) {
+      return _buildDesktopLayout();
+    }
+
+    return _buildMobileLayout();
+  }
+
+  Widget _buildDesktopLayout() {
+    return Scaffold(
+      backgroundColor: const Color(0xFFF8FAFC),
+      body: Column(
+        children: [
+          CCBreadcrumbBar(
+            items: [
+              BreadcrumbItem(
+                label: 'Classes',
+                onTap: () => Navigator.of(context).popUntil((route) => route.isFirst),
+              ),
+              BreadcrumbItem(
+                label: widget.className,
+                onTap: () => Navigator.pop(context),
+              ),
+              const BreadcrumbItem(
+                label: 'PBL Projects',
+              ),
+            ],
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                OutlinedButton.icon(
+                  onPressed: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => ClassMiniProjectsScreen(
+                        classId: widget.classId,
+                        className: widget.className,
+                      ),
+                    ),
+                  ),
+                  icon: const Icon(Icons.list_alt, size: 16),
+                  label: const Text('All Projects'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: const Color(0xFF8B5CF6),
+                    side: const BorderSide(color: Color(0xFF8B5CF6)),
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                ElevatedButton.icon(
+                  onPressed: _openConceptReviewFromStoredChapters,
+                  icon: const Icon(Icons.auto_awesome, size: 16),
+                  label: const Text('Generate PBL'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF8B5CF6),
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    elevation: 0,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Expanded(
+            child: Align(
+              alignment: Alignment.topCenter,
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 1200),
+                child: _buildDesktopContent(),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDesktopContent() {
+    return StreamBuilder<QuerySnapshot>(
+      stream: _pblStream,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(
+            child: CcLoadingAnimation(color: Color(0xFF8B5CF6)),
+          );
+        }
+
+        if (snapshot.hasError) {
+          return Center(
+            child: Text(
+              'Error: ${snapshot.error}',
+              style: const TextStyle(color: Color(0xFF0D1B3D)),
+            ),
+          );
+        }
+
+        final pblDocs = snapshot.data?.docs ?? [];
+
+        if (pblDocs.isEmpty) {
+          return _buildDesktopEmptyState();
+        }
+
+        return SingleChildScrollView(
+          padding: const EdgeInsets.all(32),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    'Active Projects',
+                    style: TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xFF1E293B),
+                    ),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF8B5CF6).withValues(alpha: 0.08),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text(
+                      '${pblDocs.length} ${pblDocs.length == 1 ? 'Project' : 'Projects'}',
+                      style: const TextStyle(color: Color(0xFF8B5CF6), fontSize: 13, fontWeight: FontWeight.w600),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 24),
+              GridView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 3,
+                  childAspectRatio: 1.2,
+                  crossAxisSpacing: 20,
+                  mainAxisSpacing: 20,
+                ),
+                itemCount: pblDocs.length,
+                itemBuilder: (context, index) {
+                  final pblDoc = pblDocs[index];
+                  final pblData = pblDoc.data() as Map<String, dynamic>;
+                  return _buildDesktopPblCard(context, pblData, pblDoc.id);
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildDesktopEmptyState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            width: 100,
+            height: 100,
+            decoration: BoxDecoration(
+              color: const Color(0xFF8B5CF6).withValues(alpha: 0.08),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(Icons.lightbulb_outline_rounded, size: 54, color: Color(0xFF8B5CF6)),
+          ),
+          const SizedBox(height: 20),
+          const Text(
+            'No PBL projects yet',
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.w700,
+              color: Color(0xFF1E293B),
+            ),
+          ),
+          const SizedBox(height: 8),
+          const Text(
+            'Generate from the chapters and concepts\nextracted at class creation.',
+            textAlign: TextAlign.center,
+            style: TextStyle(fontSize: 14, color: Color(0xFF64748B)),
+          ),
+          const SizedBox(height: 28),
+          ElevatedButton.icon(
+            onPressed: _openConceptReviewFromStoredChapters,
+            icon: const Icon(Icons.auto_awesome, color: Colors.white),
+            label: const Text('Generate PBL from Stored Chapters'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF8B5CF6),
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDesktopPblCard(BuildContext context, Map<String, dynamic> pblData, String pblId) {
+    final title = pblData['title'] ?? 'Untitled Project';
+    final problemStatement = pblData['problemStatement'] ?? 'No problem statement';
+    final objectives = pblData['learningObjectives'] as List<dynamic>?;
+    final milestones = pblData['milestones'] as List<dynamic>?;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF8B5CF6).withValues(alpha: 0.06),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(16),
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => PblDetailScreen(
+                  classId: widget.classId,
+                  pblId: pblId,
+                  title: title,
+                  pblData: pblData,
+                ),
+              ),
+            );
+          },
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      width: 36,
+                      height: 36,
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(colors: [Color(0xFF8B5CF6), Color(0xFFA78BFA)]),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: const Icon(Icons.psychology, color: Colors.white, size: 18),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        title,
+                        style: const TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w700,
+                          color: Color(0xFF1E293B),
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  problemStatement,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 13,
+                    color: Color(0xFF64748B),
+                    height: 1.4,
+                  ),
+                ),
+                const Spacer(),
+                Row(
+                  children: [
+                    if (objectives != null && objectives.isNotEmpty)
+                      _buildDesktopInfoChip(Icons.track_changes, '${objectives.length}', Colors.blueAccent),
+                    if (milestones != null && milestones.isNotEmpty) ...[
+                      const SizedBox(width: 6),
+                      _buildDesktopInfoChip(Icons.flag, '${milestones.length}', Colors.greenAccent),
+                    ],
+                    const Spacer(),
+                    const Icon(Icons.arrow_forward_ios, color: Color(0xFFA5B2C8), size: 14),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDesktopInfoChip(IconData icon, String label, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 12, color: color),
+          const SizedBox(width: 4),
+          Text(label, style: TextStyle(color: color, fontSize: 11, fontWeight: FontWeight.w600)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMobileLayout() {
     return Scaffold(
       backgroundColor: const Color(0xFFF4F8FF),
       appBar: AppBar(
@@ -128,7 +454,6 @@ class _PblMainScreenState extends State<PblMainScreen> {
 
           final pblDocs = snapshot.data?.docs ?? [];
 
-          // If no PBL exists, ask teacher to use stored chapters and concepts
           if (pblDocs.isEmpty) {
             return Center(
               child: Padding(
@@ -176,13 +501,11 @@ class _PblMainScreenState extends State<PblMainScreen> {
             );
           }
 
-          // Show existing PBL problems
           return SingleChildScrollView(
             padding: const EdgeInsets.all(16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Class Info Card
                 Container(
                   width: double.infinity,
                   decoration: BoxDecoration(
@@ -190,7 +513,7 @@ class _PblMainScreenState extends State<PblMainScreen> {
                     borderRadius: BorderRadius.circular(16),
                     boxShadow: [
                       BoxShadow(
-                        color: const Color(0xFF2E6BFF).withOpacity(0.06),
+                        color: const Color(0xFF2E6BFF).withValues(alpha: 0.06),
                         blurRadius: 10,
                         offset: const Offset(0, 4),
                       ),
@@ -218,7 +541,7 @@ class _PblMainScreenState extends State<PblMainScreen> {
                             vertical: 4,
                           ),
                           decoration: BoxDecoration(
-                            color: const Color(0xFF2E6BFF).withOpacity(0.08),
+                            color: const Color(0xFF2E6BFF).withValues(alpha: 0.08),
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: Text(
@@ -244,7 +567,6 @@ class _PblMainScreenState extends State<PblMainScreen> {
                   ),
                 ),
                 const SizedBox(height: 16),
-                // PBL Cards
                 ListView.builder(
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
@@ -270,14 +592,10 @@ class _PblMainScreenState extends State<PblMainScreen> {
     );
   }
 
-  Widget _buildPblCard(
-    BuildContext context,
-    Map<String, dynamic> pblData,
-    String pblId,
-  ) {
+  // Mobile layout card builder
+  Widget _buildPblCard(BuildContext context, Map<String, dynamic> pblData, String pblId) {
     final title = pblData['title'] ?? 'Untitled Project';
-    final problemStatement =
-        pblData['problemStatement'] ?? 'No problem statement';
+    final problemStatement = pblData['problemStatement'] ?? 'No problem statement';
     final objectives = pblData['learningObjectives'] as List<dynamic>?;
     final milestones = pblData['milestones'] as List<dynamic>?;
 
@@ -289,7 +607,7 @@ class _PblMainScreenState extends State<PblMainScreen> {
         border: Border.all(color: const Color(0x1A2E6BFF)),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF2E6BFF).withOpacity(0.06),
+            color: const Color(0xFF2E6BFF).withValues(alpha: 0.06),
             blurRadius: 8,
             offset: const Offset(0, 4),
           ),
@@ -353,19 +671,11 @@ class _PblMainScreenState extends State<PblMainScreen> {
                 Row(
                   children: [
                     if (objectives != null && objectives.isNotEmpty)
-                      _buildInfoChip(
-                        Icons.track_changes,
-                        '${objectives.length} Objectives',
-                        Colors.blueAccent,
-                      ),
+                      _buildMobileInfoChip(Icons.track_changes, '${objectives.length} Objectives', Colors.blueAccent),
                     if (objectives != null && objectives.isNotEmpty)
                       const SizedBox(width: 8),
                     if (milestones != null && milestones.isNotEmpty)
-                      _buildInfoChip(
-                        Icons.flag,
-                        '${milestones.length} Milestones',
-                        Colors.greenAccent,
-                      ),
+                      _buildMobileInfoChip(Icons.flag, '${milestones.length} Milestones', Colors.greenAccent),
                   ],
                 ),
                 const SizedBox(height: 16),
@@ -381,26 +691,21 @@ class _PblMainScreenState extends State<PblMainScreen> {
                           MaterialPageRoute(
                             builder: (context) => PblEditorScreen(
                               classId: widget.classId,
+                              className: widget.className,
                               project: PblProject.fromJson(pblData),
                               pblId: pblId,
                             ),
                           ),
                         );
                       },
-                      style: TextButton.styleFrom(
-                        foregroundColor: const Color(0xFF2E6BFF),
-                      ),
+                      style: TextButton.styleFrom(foregroundColor: const Color(0xFF2E6BFF)),
                       icon: const Icon(Icons.edit, size: 18),
                       label: const Text('Edit'),
                     ),
                     const SizedBox(width: 8),
                     TextButton.icon(
-                      onPressed: () {
-                        _deletePbl(context, pblId);
-                      },
-                      style: TextButton.styleFrom(
-                        foregroundColor: Colors.redAccent,
-                      ),
+                      onPressed: () => _deletePbl(context, pblId),
+                      style: TextButton.styleFrom(foregroundColor: Colors.redAccent),
                       icon: const Icon(Icons.delete, size: 18),
                       label: const Text('Delete'),
                     ),
@@ -414,27 +719,20 @@ class _PblMainScreenState extends State<PblMainScreen> {
     );
   }
 
-  Widget _buildInfoChip(IconData icon, String label, Color color) {
+  Widget _buildMobileInfoChip(IconData icon, String label, Color color) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: color.withOpacity(0.3)),
+        border: Border.all(color: color.withValues(alpha: 0.3)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(icon, size: 14, color: color),
           const SizedBox(width: 6),
-          Text(
-            label,
-            style: TextStyle(
-              color: color,
-              fontSize: 12,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
+          Text(label, style: TextStyle(color: color, fontSize: 12, fontWeight: FontWeight.bold)),
         ],
       ),
     );
@@ -445,21 +743,12 @@ class _PblMainScreenState extends State<PblMainScreen> {
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: Colors.white,
-        title: const Text(
-          'Delete PBL?',
-          style: TextStyle(color: Color(0xFF0D1B3D)),
-        ),
-        content: const Text(
-          'This action cannot be undone.',
-          style: TextStyle(color: Color(0xFF5C6B8C)),
-        ),
+        title: const Text('Delete PBL?', style: TextStyle(color: Color(0xFF0D1B3D))),
+        content: const Text('This action cannot be undone.', style: TextStyle(color: Color(0xFF5C6B8C))),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text(
-              'Cancel',
-              style: TextStyle(color: Color(0xFF5C6B8C)),
-            ),
+            child: const Text('Cancel', style: TextStyle(color: Color(0xFF5C6B8C))),
           ),
           TextButton(
             onPressed: () {

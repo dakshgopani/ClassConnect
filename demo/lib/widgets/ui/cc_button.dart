@@ -44,7 +44,7 @@ class CcButton extends StatelessWidget {
     }
 
     return SizedBox(
-      width: double.infinity,
+      width: MediaQuery.of(context).size.width > 800 ? 400 : double.infinity,
       height: 46,
       child: ElevatedButton(
         onPressed: isLoading ? null : onPressed,

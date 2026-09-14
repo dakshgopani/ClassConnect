@@ -3,6 +3,7 @@ import 'package:demo/screens/register_screen.dart';
 import 'package:demo/theme/app_theme.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'firebase_options.dart';
 import 'package:flutter/material.dart';
 import 'package:demo/widgets/ui/cc_loading_animation.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -17,7 +18,7 @@ import 'package:demo/screens/teacher_details_screen.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await dotenv.load(fileName: '.env');
-  await Firebase.initializeApp();
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   final supabaseUrl = dotenv.env['SUPABASE_URL']?.trim() ?? '';
   final supabaseAnonKey = dotenv.env['SUPABASE_ANON_KEY']?.trim() ?? '';
 
@@ -146,12 +147,10 @@ class RoleRouter extends StatelessWidget {
 
           if (hasParentDetails && hasStudentDetails) {
             return const StudentHome();
-          } else {
-            return ParentDetailsScreen(uid: uid);
           }
         }
 
-        // 🔁 STUDENT NOT FOUND → CHECK TEACHER
+        // 🔁 CHECK TEACHER (checks teacher collection and prevents teacher lock-out)
         return FutureBuilder<DocumentSnapshot>(
           future: FirebaseFirestore.instance
               .collection('teachers')
@@ -192,6 +191,11 @@ class RoleRouter extends StatelessWidget {
               } else {
                 return TeacherDetailsScreen(uid: uid);
               }
+            }
+
+            // 🎓 If not in teachers, but student record exists:
+            if (studentSnapshot.hasData && studentSnapshot.data!.exists) {
+              return ParentDetailsScreen(uid: uid);
             }
 
             // ❌ SAFETY FALLBACK

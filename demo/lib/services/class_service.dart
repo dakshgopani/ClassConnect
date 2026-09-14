@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'dart:io';
+import 'dart:io' if (dart.library.html) 'package:demo/services/_file_stub.dart';
+import 'dart:typed_data';
 import 'dart:math';
 import 'class_automation_service.dart';
 import 'package:demo/screens/teacher/pbl/services/gemini_service.dart';
@@ -46,7 +47,7 @@ class ClassService {
      👨‍🏫 TEACHER
   ============================================================ */
 
-  /// Create a new class (Teacher)
+  /// Create Class + Generate Code + Store in Firestore
   Future<CreateClassResult> createClass({
     required String className,
     required String subject,
@@ -59,10 +60,14 @@ class ClassService {
     required bool pblEnabled,
     required bool studentCanPost,
     File? syllabusFile,
+    Uint8List? syllabusBytes,
+    String? syllabusFileName,
   }) async {
     final teacher = _requireUser();
 
     final classCode = _generateClassCode();
+
+    final hasSyllabus = (syllabusFile != null) || (syllabusBytes != null && syllabusBytes.isNotEmpty);
 
     final classDoc = await _firestore.collection('classes').add({
       'class_name': className,
@@ -79,14 +84,19 @@ class ClassService {
       'autoAddStudents': autoAddStudents,
       'pblEnabled': pblEnabled,
       'studentCanPost': studentCanPost,
-      'syllabusProvided': syllabusFile != null,
+      'syllabusProvided': hasSyllabus,
       'created_at': FieldValue.serverTimestamp(),
     });
 
     var syllabusProcessed = false;
-    if (syllabusFile != null) {
+    if (hasSyllabus) {
       try {
-        final syllabus = await _extractSyllabusChaptersFromFile(syllabusFile);
+        final resolvedName = syllabusFileName ?? (syllabusFile != null ? _fileNameFromPath(syllabusFile.path) : 'syllabus');
+        final syllabus = await _extractSyllabusChapters(
+          file: syllabusFile,
+          bytes: syllabusBytes,
+          fileName: resolvedName,
+        );
         if (syllabus.isNotEmpty) {
           await _saveSyllabusChapters(
             classId: classDoc.id,
@@ -97,8 +107,8 @@ class ClassService {
           await classDoc.update({
             'hasSyllabusChapters': true,
             'syllabusExtractionStatus': 'completed',
-            'syllabusFileName': _fileNameFromPath(syllabusFile.path),
-            'syllabusFileType': _fileTypeFromPath(syllabusFile.path),
+            'syllabusFileName': resolvedName,
+            'syllabusFileType': _fileTypeFromPath(resolvedName),
             'syllabusExtractedAt': FieldValue.serverTimestamp(),
           });
           syllabusProcessed = true;
@@ -142,21 +152,37 @@ class ClassService {
     );
   }
 
-  Future<Map<String, List<String>>> _extractSyllabusChaptersFromFile(
-    File file,
-  ) async {
-    final lower = file.path.toLowerCase();
+  Future<Map<String, List<String>>> _extractSyllabusChapters({
+    File? file,
+    Uint8List? bytes,
+    String? fileName,
+  }) async {
+    final name = fileName ?? (file != null ? _fileNameFromPath(file.path) : '');
+    final lower = name.toLowerCase();
     String extractedText = '';
 
-    if (lower.endsWith('.pdf')) {
-      extractedText = await GeminiService.extractTextFromPdf(file);
-    } else if (lower.endsWith('.doc') || lower.endsWith('.docx')) {
-      extractedText = await GeminiService.extractTextFromDoc(file);
-    } else if (lower.endsWith('.jpg') ||
-        lower.endsWith('.jpeg') ||
-        lower.endsWith('.png') ||
-        lower.endsWith('.webp')) {
-      extractedText = await GeminiService.extractTextFromImage(file);
+    if (bytes != null && bytes.isNotEmpty) {
+      if (lower.endsWith('.pdf')) {
+        extractedText = await GeminiService.extractTextFromPdfBytes(bytes, name);
+      } else if (lower.endsWith('.doc') || lower.endsWith('.docx')) {
+        extractedText = await GeminiService.extractTextFromDocBytes(bytes, name);
+      } else if (lower.endsWith('.jpg') ||
+          lower.endsWith('.jpeg') ||
+          lower.endsWith('.png') ||
+          lower.endsWith('.webp')) {
+        extractedText = await GeminiService.extractTextFromImageBytes(bytes, name);
+      }
+    } else if (file != null) {
+      if (lower.endsWith('.pdf')) {
+        extractedText = await GeminiService.extractTextFromPdf(file);
+      } else if (lower.endsWith('.doc') || lower.endsWith('.docx')) {
+        extractedText = await GeminiService.extractTextFromDoc(file);
+      } else if (lower.endsWith('.jpg') ||
+          lower.endsWith('.jpeg') ||
+          lower.endsWith('.png') ||
+          lower.endsWith('.webp')) {
+        extractedText = await GeminiService.extractTextFromImage(file);
+      }
     }
 
     if (extractedText.trim().isEmpty) {

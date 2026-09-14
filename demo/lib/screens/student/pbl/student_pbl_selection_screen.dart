@@ -3,9 +3,13 @@ import 'package:demo/widgets/ui/cc_loading_animation.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:demo/widgets/ui/cc_decorated_background.dart';
+import 'package:demo/theme/app_colors.dart';
+import 'package:demo/theme/app_spacing.dart';
+import 'package:demo/widgets/cc_breadcrumb_bar.dart';
 
 class StudentPblSelectionScreen extends StatefulWidget {
   final String classId;
+  final String? className;
   final String pblId;
   final String title;
   final String problemStatement;
@@ -14,6 +18,7 @@ class StudentPblSelectionScreen extends StatefulWidget {
   const StudentPblSelectionScreen({
     super.key,
     required this.classId,
+    this.className,
     required this.pblId,
     required this.title,
     required this.problemStatement,
@@ -161,43 +166,70 @@ class _StudentPblSelectionScreenState extends State<StudentPblSelectionScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final currentClassName = widget.className ?? 'Class';
+
     return Scaffold(
-      backgroundColor: const Color(0xFFF4F8FF),
-      appBar: AppBar(
-        title: const Text('Select Mini Project'),
-        backgroundColor: _bg,
-        elevation: 0,
-      ),
-      body: CcDecoratedBackground(
-        child: StreamBuilder<DocumentSnapshot>(
-          stream: FirebaseFirestore.instance
-              .collection('classes')
-              .doc(widget.classId)
-              .collection('PBL')
-              .doc(widget.pblId)
-              .snapshots(),
-          builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting &&
-                _isLoading) {
-              return const Center(child: CcLoadingAnimation());
-            }
+      backgroundColor: AppColors.background,
+      body: SafeArea(
+        child: Column(
+          children: [
+            CCBreadcrumbBar(
+              items: [
+                BreadcrumbItem(
+                  label: 'Classes',
+                  onTap: () {
+                    Navigator.of(context).popUntil((route) => route.isFirst);
+                  },
+                ),
+                BreadcrumbItem(
+                  label: currentClassName,
+                  onTap: () {
+                    Navigator.of(context).pop();
+                  },
+                ),
+                BreadcrumbItem(
+                  label: 'PBL Projects',
+                  onTap: () {
+                    Navigator.of(context).pop();
+                  },
+                ),
+                const BreadcrumbItem(label: 'Select Mini Project'),
+              ],
+            ),
+            Expanded(
+              child: CcDecoratedBackground(
+                child: StreamBuilder<DocumentSnapshot>(
+                  stream: FirebaseFirestore.instance
+                      .collection('classes')
+                      .doc(widget.classId)
+                      .collection('PBL')
+                      .doc(widget.pblId)
+                      .snapshots(),
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting &&
+                        _isLoading) {
+                      return const Center(child: CcLoadingAnimation());
+                    }
 
-            final pblData = snapshot.data?.data() as Map<String, dynamic>?;
-            final currentMiniProjects =
-                (pblData?['miniProjects'] as List?)
-                    ?.map((e) => Map<String, dynamic>.from(e as Map))
-                    .toList() ??
-                widget.miniProjects;
+                    final pblData = snapshot.data?.data() as Map<String, dynamic>?;
+                    final currentMiniProjects =
+                        (pblData?['miniProjects'] as List?)
+                            ?.map((e) => Map<String, dynamic>.from(e as Map))
+                            .toList() ??
+                        widget.miniProjects;
 
-            if (_isLoading) {
-              return const Center(child: CcLoadingAnimation());
-            }
+                    if (_isLoading) {
+                      return const Center(child: CcLoadingAnimation());
+                    }
 
-            return SingleChildScrollView(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
+                    return Center(
+                      child: ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 900),
+                        child: SingleChildScrollView(
+                          padding: const EdgeInsets.all(AppSpacing.lg),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
                   if (_selectedProjectTitle != null) ...[
                     // Show Selected Project
                     Container(
@@ -344,10 +376,16 @@ class _StudentPblSelectionScreenState extends State<StudentPblSelectionScreen> {
                   ],
                 ],
               ),
-            );
-          },
-        ),
-      ),
-    );
-  }
+            ),
+          ),
+        );
+      },
+    ),
+  ),
+),
+],
+),
+),
+);
+}
 }

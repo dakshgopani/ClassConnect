@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(flutter pub *)",
+      "Bash(flutter build *)",
+      "Bash(flutter run *)",
+      "Bash(flutter doctor *)",
+      "Bash(flutter clean *)",
+      "Skill(ruflo-security-audit:security-scan)",
+      "Skill(ruflo-security-audit:security-scan:*)",
+      "Bash(npx @claude-flow/cli@latest security cve --check)",
+      "Bash(npx @claude-flow/cli@latest security report --format markdown)",
+      "Bash(npx @claude-flow/cli@latest security report --format text)",
+      "Bash(flutter analyze *)",
+      "Bash(Select-String -Pattern \"Error|Failed|error\")",
+      "Bash(Select-Object -First 50)"
+    ]
+  }
+}

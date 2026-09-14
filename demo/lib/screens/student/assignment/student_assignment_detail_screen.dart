@@ -1,4 +1,4 @@
-import 'dart:io';
+// import 'dart:io'; // removed for web compatibility
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:demo/theme/app_colors.dart';
@@ -11,17 +11,20 @@ import 'package:file_picker/file_picker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:demo/services/pbl_supabase_client.dart';
+import 'package:demo/widgets/cc_breadcrumb_bar.dart';
 
 class StudentAssignmentDetailScreen extends StatefulWidget {
   final String classId;
   final String assignmentId;
   final Map<String, dynamic> assignmentData;
+  final String? className;
 
   const StudentAssignmentDetailScreen({
     super.key,
     required this.classId,
     required this.assignmentId,
     required this.assignmentData,
+    this.className,
   });
 
   @override
@@ -97,8 +100,8 @@ class _StudentAssignmentDetailScreenState
       final supabase = PblSupabaseClient.client;
 
       // 1. Upload to Supabase Storage
+      // Upload using binary data (available on both web and mobile when bytes are provided)
       if (_pickedFile!.bytes != null) {
-        // Web or Memory
         await supabase.storage
             .from('assignments')
             .uploadBinary(
@@ -106,15 +109,12 @@ class _StudentAssignmentDetailScreenState
               _pickedFile!.bytes!,
               fileOptions: const FileOptions(upsert: true),
             );
-      } else if (_pickedFile!.path != null) {
-        // Mobile IO
-        await supabase.storage
-            .from('assignments')
-            .upload(
-              path,
-              File(_pickedFile!.path!),
-              fileOptions: const FileOptions(upsert: true),
-            );
+      } else {
+        // If bytes are not available, show an error (fallback could be implemented later)
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Unable to read file data for upload.')),
+        );
+        return;
       }
 
       final fullPath = await supabase.storage
@@ -208,25 +208,40 @@ class _StudentAssignmentDetailScreenState
     final description =
         widget.assignmentData['description'] ?? 'No description provided.';
 
+    final classTitle = widget.className ?? 'Class';
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: AppBar(
-        title: const Text('Assignment Details'),
-        backgroundColor: AppColors.background,
-        foregroundColor: AppColors.textPrimary,
-        centerTitle: true,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(AppSpacing.lg),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            CcCard(
-              padding: const EdgeInsets.all(20),
+      body: Column(
+        children: [
+          CCBreadcrumbBar(
+            items: [
+              BreadcrumbItem(
+                label: 'Classes',
+                icon: Icons.school_rounded,
+                onTap: () => Navigator.of(context).popUntil((route) => route.isFirst),
+              ),
+              BreadcrumbItem(
+                label: classTitle,
+                onTap: () => Navigator.pop(context),
+              ),
+              BreadcrumbItem(
+                label: 'Assignments',
+                onTap: () => Navigator.pop(context),
+              ),
+              BreadcrumbItem(label: title),
+            ],
+          ),
+          Expanded(
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 900),
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.all(AppSpacing.lg),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      CcCard(
+                        padding: const EdgeInsets.all(20),
               glass: true,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -498,18 +513,23 @@ class _StudentAssignmentDetailScreenState
 
                     const SizedBox(height: 20),
 
-                    CcButton(
-                      label: 'Hand In',
-                      isLoading: _isSubmitting,
-                      icon: const Icon(Icons.send_rounded, color: Colors.white),
-                      onPressed: _submitAssignment,
-                    ),
-                  ],
+                      CcButton(
+                        label: 'Hand In',
+                        isLoading: _isSubmitting,
+                        icon: const Icon(Icons.send_rounded, color: Colors.white),
+                        onPressed: _submitAssignment,
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-          ],
+            ],
+          ),
         ),
       ),
-    );
+    ),
+  ),
+],
+),
+);
   }
 }

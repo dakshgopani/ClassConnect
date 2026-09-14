@@ -39,14 +39,14 @@ class CcFloatingNavItem extends StatelessWidget {
             children: [
               Icon(
                 icon,
-                size: 22,
+                size: MediaQuery.of(context).size.width >= 1024 ? 28 : 22,
                 color: selected ? activeColor : inactiveColor,
               ),
               const SizedBox(height: 4),
               Text(
                 label,
                 style: TextStyle(
-                  fontSize: 11,
+                  fontSize: MediaQuery.of(context).size.width >= 1024 ? 14 : 11,
                   fontWeight: FontWeight.w700,
                   color: selected ? activeColor : inactiveColor,
                 ),

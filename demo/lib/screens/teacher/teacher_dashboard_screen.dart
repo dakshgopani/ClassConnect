@@ -1,23 +1,26 @@
 import 'dart:async';
-
 import 'package:flutter/material.dart';
-import 'package:demo/widgets/ui/cc_loading_animation.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:demo/widgets/ui/cc_decorated_background.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:demo/models/wellbeing_data.dart';
 import 'package:demo/services/wellbeing_service.dart';
 import 'package:demo/services/wellbeing_recommendation_service.dart';
+import 'package:demo/widgets/ui/cc_loading_animation.dart';
+import 'package:demo/utils/responsive_breakpoints.dart';
+import 'teacher_class_detail_screen.dart';
+import 'create_class_screen.dart';
 
-class TeacherDashboardPage extends StatefulWidget {
-  const TeacherDashboardPage({super.key});
+typedef TeacherDashboardPage = TeacherDashboardScreen;
+
+class TeacherDashboardScreen extends StatefulWidget {
+  const TeacherDashboardScreen({super.key});
 
   @override
-  State<TeacherDashboardPage> createState() => _TeacherDashboardPageState();
+  State<TeacherDashboardScreen> createState() => _TeacherDashboardScreenState();
 }
 
-class _TeacherDashboardPageState extends State<TeacherDashboardPage>
+class _TeacherDashboardScreenState extends State<TeacherDashboardScreen>
     with SingleTickerProviderStateMixin {
   final TextEditingController _searchController = TextEditingController();
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -70,6 +73,7 @@ class _TeacherDashboardPageState extends State<TeacherDashboardPage>
   }
 
   Future<void> _loadDashboardData() async {
+    if (!mounted) return;
     setState(() => _isLoading = true);
 
     try {
@@ -107,8 +111,8 @@ class _TeacherDashboardPageState extends State<TeacherDashboardPage>
             'id': d.id,
             'name':
                 (d.data()['class_name'] as String?)?.trim().isNotEmpty == true
-                ? d.data()['class_name'] as String
-                : 'Class ${d.id.substring(0, 6)}',
+                    ? d.data()['class_name'] as String
+                    : 'Class ${d.id.substring(0, 6)}',
           },
         )
         .toList();
@@ -260,10 +264,12 @@ class _TeacherDashboardPageState extends State<TeacherDashboardPage>
       _avgPBLScore = totalPBL / loadedStudents.length;
     }
 
-    setState(() {
-      students = loadedStudents;
-    });
-    _applyFilters();
+    if (mounted) {
+      setState(() {
+        students = loadedStudents;
+      });
+      _applyFilters();
+    }
   }
 
   Future<void> _fetchWeakConcepts(String teacherId) async {
@@ -377,7 +383,6 @@ class _TeacherDashboardPageState extends State<TeacherDashboardPage>
 
     setState(() => _loadingRecommendations.add(wb.studentId));
 
-    // Gather weak concepts for this student
     List<String> weakConcepts = [];
     final quizSnap = await _firestore
         .collection('quiz_attempts')
@@ -407,134 +412,526 @@ class _TeacherDashboardPageState extends State<TeacherDashboardPage>
     }
   }
 
-  // =================== BUILD ===================
-
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
-      return const Scaffold(
-        body: CcDecoratedBackground(
-          child: Center(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [CcLoadingAnimation(color: Color(0xFF2E6BFF))],
-            ),
+      return Container(
+        color: const Color(0xFFF8FAFC),
+        child: const Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              CcLoadingAnimation(color: Color(0xFF2E6BFF)),
+              SizedBox(height: 16),
+              Text(
+                'Loading dashboard analytics...',
+                style: TextStyle(color: Color(0xFF64748B), fontSize: 14),
+              ),
+            ],
           ),
         ),
       );
     }
 
-    final user = FirebaseAuth.instance.currentUser;
+    final isDesktop = ResponsiveBreakpoints.isDesktop(context);
+    final canPop = Navigator.of(context).canPop();
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF4F8FF),
-      body: CcDecoratedBackground(
-        child: NestedScrollView(
-          headerSliverBuilder: (context, innerBoxIsScrolled) {
-            return [
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _buildHeader(user?.displayName ?? 'Teacher'),
-                      const SizedBox(height: 24),
-                      _buildQuickStatsGrid(),
-                      const SizedBox(height: 24),
+      backgroundColor: const Color(0xFFF8FAFC),
+      appBar: canPop
+          ? AppBar(
+              backgroundColor: Colors.white,
+              elevation: 0,
+              leading: IconButton(
+                icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Color(0xFF1E293B)),
+                onPressed: () => Navigator.pop(context),
+                tooltip: 'Back',
+              ),
+              title: const Text(
+                'Teacher Dashboard',
+                style: TextStyle(color: Color(0xFF1E293B), fontWeight: FontWeight.w700),
+              ),
+            )
+          : null,
+      body: isDesktop ? _buildDesktopLayout() : _buildMobileLayout(),
+    );
+  }
 
-                      // Wellbeing Alert Banner
-                      if (_atRiskStudents.isNotEmpty) _buildAlertBanner(),
-                      if (_atRiskStudents.isNotEmpty)
-                        const SizedBox(height: 16),
+  // ==========================================
+  // DESKTOP LAYOUT (Rich Web Feel, No Mobile Stretch)
+  // ==========================================
+
+  Widget _buildDesktopLayout() {
+    final user = FirebaseAuth.instance.currentUser;
+    final avgAttendance = _calculateAverage('attendance');
+
+    return RefreshIndicator(
+      color: const Color(0xFF2E6BFF),
+      onRefresh: _loadDashboardData,
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 28),
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 1400),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildDesktopHeader(user?.displayName ?? 'Teacher'),
+                const SizedBox(height: 24),
+                _buildQuickStatsGrid(isDesktop: true),
+                const SizedBox(height: 20),
+
+                if (_atRiskStudents.isNotEmpty) ...[
+                  _buildAlertBanner(),
+                  const SizedBox(height: 20),
+                ],
+
+                // Tabs
+                Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: const Color(0xFFE2E8F0)),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.03),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: TabBar(
+                    controller: _tabController,
+                    indicatorColor: const Color(0xFF2E6BFF),
+                    indicatorSize: TabBarIndicatorSize.tab,
+                    labelColor: const Color(0xFF2E6BFF),
+                    unselectedLabelColor: const Color(0xFF64748B),
+                    labelStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
+                    dividerColor: Colors.transparent,
+                    onTap: (_) => setState(() {}),
+                    tabs: [
+                      Tab(
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(Icons.analytics_rounded, size: 18),
+                            const SizedBox(width: 8),
+                            const Text('Overview & Charts'),
+                          ],
+                        ),
+                      ),
+                      Tab(
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(Icons.health_and_safety_rounded, size: 18),
+                            const SizedBox(width: 8),
+                            const Text('Student Wellbeing'),
+                            if (_atRiskStudents.isNotEmpty) ...[
+                              const SizedBox(width: 8),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFFF4757),
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: Text(
+                                  '${_atRiskStudents.length}',
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w800,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
                     ],
                   ),
                 ),
-              ),
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(14),
-                      border: Border.all(color: const Color(0x1A2E6BFF)),
-                    ),
-                    child: TabBar(
-                      controller: _tabController,
-                      indicatorColor: const Color(0xFF2E6BFF),
-                      indicatorSize: TabBarIndicatorSize.tab,
-                      labelColor: const Color(0xFF2E6BFF),
-                      unselectedLabelColor: const Color(0xFF5C6B8C),
-                      labelStyle: const TextStyle(
-                        fontWeight: FontWeight.w700,
-                        fontSize: 13,
-                      ),
-                      dividerColor: Colors.transparent,
-                      tabs: [
-                        Tab(
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              const Icon(Icons.analytics_rounded, size: 18),
-                              const SizedBox(width: 6),
-                              const Text('Overview'),
-                            ],
-                          ),
-                        ),
-                        Tab(
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              const Icon(
-                                Icons.health_and_safety_rounded,
-                                size: 18,
-                              ),
-                              const SizedBox(width: 6),
-                              const Text('Wellbeing'),
-                              if (_atRiskStudents.isNotEmpty) ...[
-                                const SizedBox(width: 6),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 6,
-                                    vertical: 2,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: const Color(0xFFFF4757),
-                                    borderRadius: BorderRadius.circular(10),
-                                  ),
-                                  child: Text(
-                                    '${_atRiskStudents.length}',
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 10,
-                                      fontWeight: FontWeight.w800,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            ];
-          },
-          body: TabBarView(
-            controller: _tabController,
-            children: [_buildOverviewTab(), _buildWellbeingTab()],
+                const SizedBox(height: 28),
+
+                // Active Tab Content
+                _tabController.index == 0
+                    ? _buildDesktopOverviewContent(avgAttendance)
+                    : _buildDesktopWellbeingContent(),
+              ],
+            ),
           ),
         ),
       ),
     );
   }
 
-  // =================== HEADER ===================
+  Widget _buildDesktopHeader(String teacherName) {
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.03),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 54,
+            height: 54,
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [Color(0xFF2E6BFF), Color(0xFF5B8CFF)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: const Icon(Icons.dashboard_rounded, color: Colors.white, size: 28),
+          ),
+          const SizedBox(width: 18),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    const Text(
+                      'Welcome back, ',
+                      style: TextStyle(color: Color(0xFF64748B), fontSize: 16, fontWeight: FontWeight.w500),
+                    ),
+                    Text(
+                      '$teacherName!',
+                      style: const TextStyle(
+                        color: Color(0xFF1E293B),
+                        fontSize: 22,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                const Text(
+                  'Comprehensive academic performance, real-time metrics & student wellbeing.',
+                  style: TextStyle(color: Color(0xFF94A3B8), fontSize: 13),
+                ),
+              ],
+            ),
+          ),
+          SizedBox(
+            width: 240,
+            child: _buildClassFilter(),
+          ),
+          const SizedBox(width: 12),
+          Container(
+            decoration: BoxDecoration(
+              color: const Color(0xFF2E6BFF).withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: IconButton(
+              icon: const Icon(Icons.refresh_rounded, color: Color(0xFF2E6BFF)),
+              onPressed: _loadDashboardData,
+              tooltip: 'Refresh Data',
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 
-  Widget _buildHeader(String teacherName) {
+  Widget _buildDesktopOverviewContent(double avgAttendance) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // 3 Key Averages
+        _buildStatsRow(isDesktop: true),
+        const SizedBox(height: 28),
+
+        // 2-Column: Performance Chart (Left) + Attendance Ring (Right)
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              flex: 3,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _sectionTitle('Performance Overview'),
+                  _buildGlassCard(
+                    height: 290,
+                    child: _performanceChart(),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 24),
+            Expanded(
+              flex: 2,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _sectionTitle('Class Attendance Rate'),
+                  _buildGlassCard(
+                    height: 290,
+                    child: _attendanceWidget(avgAttendance),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 28),
+
+        // 2-Column: Weak Concepts (Left) + Top Performers (Right)
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              flex: 3,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _sectionTitle('Weak Concepts Requiring Review'),
+                  _weakConcepts.isEmpty
+                      ? _buildGlassCard(
+                          height: 180,
+                          child: const Center(
+                            child: Text(
+                              'No weak concepts detected. All quizzes performing well!',
+                              style: TextStyle(color: Color(0xFF64748B)),
+                            ),
+                          ),
+                        )
+                      : Container(
+                          padding: const EdgeInsets.all(20),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(color: const Color(0xFFE2E8F0)),
+                          ),
+                          child: _buildWeakConceptsSection(),
+                        ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 24),
+            Expanded(
+              flex: 2,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _sectionTitle('Top Performers'),
+                  Container(
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: const Color(0xFFE2E8F0)),
+                    ),
+                    child: _buildTopPerformersSection(),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 32),
+
+        // Full Width: All Students Table
+        _sectionTitle('All Students Roster & Score Distribution'),
+        _buildSearchBar(),
+        const SizedBox(height: 14),
+        Container(
+          width: double.infinity,
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: const Color(0xFFE2E8F0)),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.02),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: _buildStudentsTable(),
+        ),
+        const SizedBox(height: 48),
+      ],
+    );
+  }
+
+  Widget _buildDesktopWellbeingContent() {
+    final visibleWellbeing = _visibleWellbeing();
+    final visibleAtRisk = visibleWellbeing.where((w) => w.isAtRisk).toList();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildWellbeingSummary(isDesktop: true),
+        const SizedBox(height: 28),
+
+        // Wellbeing Trend Chart
+        _sectionTitle('Class Wellbeing Trend Analysis'),
+        _buildGlassCard(
+          height: 280,
+          child: _buildWellbeingTrendChart(),
+        ),
+        const SizedBox(height: 28),
+
+        // At-Risk Students Section
+        if (visibleAtRisk.isNotEmpty) ...[
+          _sectionTitle('At-Risk Students (${visibleAtRisk.length})'),
+          ...visibleAtRisk.map(_buildAtRiskCard),
+          const SizedBox(height: 28),
+        ],
+
+        // All Student Wellbeing Scores
+        _sectionTitle('All Student Wellbeing Scores'),
+        Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: const Color(0xFFE2E8F0)),
+          ),
+          child: _buildAllWellbeingList(),
+        ),
+        const SizedBox(height: 48),
+      ],
+    );
+  }
+
+  // ==========================================
+  // MOBILE LAYOUT (Stacked, Responsive)
+  // ==========================================
+
+  Widget _buildMobileLayout() {
+    final user = FirebaseAuth.instance.currentUser;
+    final avgAttendance = _calculateAverage('attendance');
+
+    return RefreshIndicator(
+      color: const Color(0xFF2E6BFF),
+      onRefresh: _loadDashboardData,
+      child: ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          _buildMobileHeader(user?.displayName ?? 'Teacher'),
+          const SizedBox(height: 16),
+          _buildQuickStatsGrid(isDesktop: false),
+          const SizedBox(height: 16),
+
+          if (_atRiskStudents.isNotEmpty) ...[
+            _buildAlertBanner(),
+            const SizedBox(height: 16),
+          ],
+
+          Container(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: const Color(0x1A2E6BFF)),
+            ),
+            child: TabBar(
+              controller: _tabController,
+              indicatorColor: const Color(0xFF2E6BFF),
+              indicatorSize: TabBarIndicatorSize.tab,
+              labelColor: const Color(0xFF2E6BFF),
+              unselectedLabelColor: const Color(0xFF5C6B8C),
+              labelStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
+              dividerColor: Colors.transparent,
+              onTap: (_) => setState(() {}),
+              tabs: [
+                const Tab(text: 'Overview'),
+                Tab(
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Text('Wellbeing'),
+                      if (_atRiskStudents.isNotEmpty) ...[
+                        const SizedBox(width: 6),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFFF4757),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Text(
+                            '${_atRiskStudents.length}',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 10,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 20),
+
+          _tabController.index == 0
+              ? Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildStatsRow(isDesktop: false),
+                    const SizedBox(height: 20),
+                    _sectionTitle('Performance Overview'),
+                    _buildGlassCard(child: _performanceChart()),
+                    const SizedBox(height: 20),
+                    _sectionTitle('Attendance'),
+                    _buildGlassCard(child: _attendanceWidget(avgAttendance)),
+                    const SizedBox(height: 20),
+                    if (_weakConcepts.isNotEmpty) ...[
+                      _sectionTitle('Weak Concepts'),
+                      _buildWeakConceptsSection(),
+                      const SizedBox(height: 20),
+                    ],
+                    _sectionTitle('Top Performers'),
+                    _buildTopPerformersSection(),
+                    const SizedBox(height: 20),
+                    _sectionTitle('All Students'),
+                    _buildSearchBar(),
+                    const SizedBox(height: 12),
+                    _buildStudentsTable(),
+                    const SizedBox(height: 32),
+                  ],
+                )
+              : Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildWellbeingSummary(isDesktop: false),
+                    const SizedBox(height: 20),
+                    _sectionTitle('Class Wellbeing Trend'),
+                    _buildGlassCard(child: _buildWellbeingTrendChart()),
+                    const SizedBox(height: 20),
+                    if (_atRiskStudents.isNotEmpty) ...[
+                      _sectionTitle('At-Risk Students (${_atRiskStudents.length})'),
+                      ..._atRiskStudents.map(_buildAtRiskCard),
+                      const SizedBox(height: 20),
+                    ],
+                    _sectionTitle('All Student Wellbeing'),
+                    _buildAllWellbeingList(),
+                    const SizedBox(height: 32),
+                  ],
+                ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMobileHeader(String teacherName) {
     return Column(
       children: [
         Row(
@@ -555,7 +952,7 @@ class _TeacherDashboardPageState extends State<TeacherDashboardPage>
                   Text(
                     teacherName,
                     style: const TextStyle(
-                      fontSize: 26,
+                      fontSize: 24,
                       fontWeight: FontWeight.w800,
                       color: Color(0xFF0D1B3D),
                     ),
@@ -569,10 +966,7 @@ class _TeacherDashboardPageState extends State<TeacherDashboardPage>
                 borderRadius: BorderRadius.circular(12),
               ),
               child: IconButton(
-                icon: const Icon(
-                  Icons.refresh_rounded,
-                  color: Color(0xFF2E6BFF),
-                ),
+                icon: const Icon(Icons.refresh_rounded, color: Color(0xFF2E6BFF)),
                 onPressed: _loadDashboardData,
               ),
             ),
@@ -584,174 +978,196 @@ class _TeacherDashboardPageState extends State<TeacherDashboardPage>
     );
   }
 
+  // ==========================================
+  // REUSABLE CHARTS & CARDS (Exact match to mobile)
+  // ==========================================
+
   Widget _buildClassFilter() {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 2),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0x1A2E6BFF)),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
       ),
-      child: Theme(
-        data: Theme.of(context).copyWith(
-          splashColor: const Color(0xFF2E6BFF).withValues(alpha: 0.10),
-          highlightColor: const Color(0xFF2E6BFF).withValues(alpha: 0.10),
-          hoverColor: const Color(0xFF2E6BFF).withValues(alpha: 0.08),
-          focusColor: const Color(0xFF2E6BFF).withValues(alpha: 0.10),
-        ),
-        child: DropdownButtonHideUnderline(
-          child: DropdownButton<String>(
-            value: _selectedClassId,
-            isExpanded: true,
-            dropdownColor: Colors.white,
-            icon: const Icon(
-              Icons.keyboard_arrow_down_rounded,
-              color: Color(0xFF2E6BFF),
+      child: DropdownButtonHideUnderline(
+        child: DropdownButton<String>(
+          value: _selectedClassId,
+          isExpanded: true,
+          dropdownColor: Colors.white,
+          icon: const Icon(Icons.keyboard_arrow_down_rounded, color: Color(0xFF2E6BFF)),
+          style: const TextStyle(color: Color(0xFF1E293B), fontSize: 13, fontWeight: FontWeight.w500),
+          items: [
+            const DropdownMenuItem<String>(
+              value: 'all',
+              child: Text('All Classes'),
             ),
-            style: const TextStyle(color: Color(0xFF0D1B3D), fontSize: 14),
-            items: [
-              const DropdownMenuItem<String>(
-                value: 'all',
-                child: Text('All classes'),
+            ..._teacherClasses.map(
+              (c) => DropdownMenuItem<String>(
+                value: c['id']!,
+                child: Text(c['name']!),
               ),
-              ..._teacherClasses.map(
-                (c) => DropdownMenuItem<String>(
-                  value: c['id']!,
-                  child: Text(c['name']!),
+            ),
+          ],
+          onChanged: _onClassFilterChanged,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildQuickStatsGrid({required bool isDesktop}) {
+    final visibleAtRisk = _visibleWellbeing().where((w) => w.isAtRisk).length;
+
+    final cards = [
+      _quickStatCard(
+        'Classes',
+        (_selectedClassId == 'all' ? _totalClasses : 1).toString(),
+        Icons.class_rounded,
+        const Color(0xFF2E6BFF),
+      ),
+      _quickStatCard(
+        'Students',
+        _filteredStudents.length.toString(),
+        Icons.people_rounded,
+        const Color(0xFF10B981),
+      ),
+      _quickStatCard(
+        'Avg Score',
+        '${_calculateAverage('quiz_score').toStringAsFixed(0)}%',
+        Icons.trending_up_rounded,
+        const Color(0xFFFF9F43),
+      ),
+      _quickStatCard(
+        'At Risk',
+        visibleAtRisk.toString(),
+        Icons.warning_amber_rounded,
+        visibleAtRisk == 0 ? const Color(0xFF10B981) : const Color(0xFFFF4757),
+      ),
+    ];
+
+    if (!isDesktop) {
+      return Column(
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.only(right: 5, bottom: 10),
+                  child: cards[0],
+                ),
+              ),
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.only(left: 5, bottom: 10),
+                  child: cards[1],
                 ),
               ),
             ],
-            onChanged: _onClassFilterChanged,
           ),
-        ),
-      ),
-    );
-  }
+          Row(
+            children: [
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.only(right: 5),
+                  child: cards[2],
+                ),
+              ),
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.only(left: 5),
+                  child: cards[3],
+                ),
+              ),
+            ],
+          ),
+        ],
+      );
+    }
 
-  // =================== QUICK STATS ===================
-
-  Widget _buildQuickStatsGrid() {
-    final visibleAtRisk = _visibleWellbeing().where((w) => w.isAtRisk).length;
     return Row(
-      children: [
-        Expanded(
-          child: _quickStatCard(
-            'Classes',
-            (_selectedClassId == 'all' ? _totalClasses : 1).toString(),
-            Icons.class_rounded,
-            const Color(0xFF2E6BFF),
-          ),
-        ),
-        const SizedBox(width: 10),
-        Expanded(
-          child: _quickStatCard(
-            'Students',
-            _filteredStudents.length.toString(),
-            Icons.people_rounded,
-            const Color(0xFF6BCB77),
-          ),
-        ),
-        const SizedBox(width: 10),
-        Expanded(
-          child: _quickStatCard(
-            'Avg Score',
-            '${_calculateAverage('quiz_score').toStringAsFixed(0)}%',
-            Icons.trending_up_rounded,
-            const Color(0xFFFF9F43),
-          ),
-        ),
-        const SizedBox(width: 10),
-        Expanded(
-          child: _quickStatCard(
-            'At Risk',
-            visibleAtRisk.toString(),
-            Icons.warning_amber_rounded,
-            visibleAtRisk == 0
-                ? const Color(0xFF6BCB77)
-                : const Color(0xFFFF4757),
-          ),
-        ),
-      ],
+      children: cards.map((c) => Expanded(child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 5),
+        child: c,
+      ))).toList(),
     );
   }
 
-  Widget _quickStatCard(
-    String label,
-    String value,
-    IconData icon,
-    Color color,
-  ) {
+  Widget _quickStatCard(String label, String value, IconData icon, Color color) {
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: color.withValues(alpha: 0.2)),
+        border: Border.all(color: color.withValues(alpha: 0.25)),
         boxShadow: [
           BoxShadow(
-            color: color.withValues(alpha: 0.08),
-            blurRadius: 12,
+            color: color.withValues(alpha: 0.06),
+            blurRadius: 10,
             offset: const Offset(0, 4),
           ),
         ],
       ),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Icon(icon, color: color, size: 18),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Expanded(
+                child: Text(
+                  label,
+                  style: const TextStyle(fontSize: 12, color: Color(0xFF64748B), fontWeight: FontWeight.w500),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              const SizedBox(width: 4),
+              Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(icon, color: color, size: 16),
+              ),
+            ],
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 10),
           FittedBox(
             fit: BoxFit.scaleDown,
             child: Text(
               value,
               style: TextStyle(
-                fontSize: 20,
+                fontSize: 26,
                 fontWeight: FontWeight.w800,
                 color: color,
               ),
             ),
-          ),
-          const SizedBox(height: 2),
-          Text(
-            label,
-            style: const TextStyle(fontSize: 10, color: Color(0xFF5C6B8C)),
           ),
         ],
       ),
     );
   }
 
-  // =================== ALERT BANNER ===================
-
   Widget _buildAlertBanner() {
-    final highRisk = _atRiskStudents
-        .where((w) => w.riskLevel == RiskLevel.high)
-        .length;
-    final medRisk = _atRiskStudents
-        .where((w) => w.riskLevel == RiskLevel.medium)
-        .length;
+    final highRisk = _atRiskStudents.where((w) => w.riskLevel == RiskLevel.high).length;
+    final medRisk = _atRiskStudents.where((w) => w.riskLevel == RiskLevel.medium).length;
 
     return GestureDetector(
-      onTap: () => _tabController.animateTo(1),
+      onTap: () {
+        _tabController.animateTo(1);
+        setState(() {});
+      },
       child: Container(
-        padding: const EdgeInsets.all(14),
+        padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           gradient: LinearGradient(
             colors: [
-              const Color(0xFFFF4757).withValues(alpha: 0.15),
-              const Color(0xFFFF6B81).withValues(alpha: 0.08),
+              const Color(0xFFFF4757).withValues(alpha: 0.12),
+              const Color(0xFFFF6B81).withValues(alpha: 0.05),
             ],
           ),
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(
-            color: const Color(0xFFFF4757).withValues(alpha: 0.3),
-          ),
+          border: Border.all(color: const Color(0xFFFF4757).withValues(alpha: 0.3)),
         ),
         child: Row(
           children: [
@@ -761,269 +1177,240 @@ class _TeacherDashboardPageState extends State<TeacherDashboardPage>
                 color: const Color(0xFFFF4757).withValues(alpha: 0.2),
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: const Icon(
-                Icons.health_and_safety_rounded,
-                color: Color(0xFFFF4757),
-                size: 22,
-              ),
+              child: const Icon(Icons.health_and_safety_rounded, color: Color(0xFFFF4757), size: 22),
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: 14),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const Text(
                     'Student Wellbeing Alert',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w700,
-                      color: Color(0xFFFF4757),
-                    ),
+                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: Color(0xFFFF4757)),
                   ),
-                  const SizedBox(height: 2),
+                  const SizedBox(height: 3),
                   Text(
-                    '${highRisk > 0 ? '$highRisk high risk' : ''}${highRisk > 0 && medRisk > 0 ? ', ' : ''}${medRisk > 0 ? '$medRisk medium risk' : ''} student${_atRiskStudents.length > 1 ? 's' : ''} need attention',
-                    style: const TextStyle(
-                      fontSize: 11,
-                      color: Color(0xFF5C6B8C),
-                    ),
+                    '${highRisk > 0 ? '$highRisk high risk' : ''}${highRisk > 0 && medRisk > 0 ? ', ' : ''}${medRisk > 0 ? '$medRisk medium risk' : ''} student${_atRiskStudents.length > 1 ? 's' : ''} require attention. Click to review actionable interventions.',
+                    style: const TextStyle(fontSize: 12, color: Color(0xFF64748B)),
                   ),
                 ],
               ),
             ),
-            const Icon(
-              Icons.arrow_forward_ios_rounded,
-              size: 14,
-              color: Color(0xFFFF4757),
-            ),
+            const Icon(Icons.arrow_forward_ios_rounded, size: 14, color: Color(0xFFFF4757)),
           ],
         ),
       ),
     );
   }
 
-  // =================== OVERVIEW TAB ===================
-
-  Widget _buildOverviewTab() {
-    final avgAttendance = _calculateAverage('attendance');
-
-    return RefreshIndicator(
-      color: const Color(0xFF2E6BFF),
-      onRefresh: _loadDashboardData,
-      child: ListView(
-        padding: const EdgeInsets.all(20),
-        children: [
-          // Key Averages Row
-          _buildStatsRow(),
-          const SizedBox(height: 24),
-
-          // Performance Overview Chart
-          _sectionTitle('Performance Overview'),
-          _buildGlassCard(child: _performanceChart()),
-          const SizedBox(height: 24),
-
-          // Attendance & PBL side by side
-          LayoutBuilder(
-            builder: (context, constraints) {
-              if (constraints.maxWidth < 600) {
-                return Column(
-                  children: [
-                    _sectionTitle('Attendance'),
-                    _buildGlassCard(child: _attendanceWidget(avgAttendance)),
-                    const SizedBox(height: 24),
-                  ],
-                );
-              }
-              return Row(
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _sectionTitle('Attendance'),
-                        _buildGlassCard(
-                          child: _attendanceWidget(avgAttendance),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              );
-            },
-          ),
-
-          // Weak Concepts
-          if (_weakConcepts.isNotEmpty) ...[
-            _sectionTitle('Weak Concepts'),
-            _buildWeakConceptsSection(),
-            const SizedBox(height: 24),
-          ],
-
-          // Top Performers
-          _sectionTitle('Top Performers'),
-          _buildTopPerformersSection(),
-          const SizedBox(height: 24),
-
-          // Search & Student Table
-          _sectionTitle('All Students'),
-          _buildSearchBar(),
-          const SizedBox(height: 12),
-          _buildStudentsTable(),
-          const SizedBox(height: 40),
-        ],
-      ),
-    );
-  }
-
-  // =================== WELLBEING TAB ===================
-
-  Widget _buildWellbeingTab() {
-    final visibleWellbeing = _visibleWellbeing();
-    final visibleAtRisk = visibleWellbeing.where((w) => w.isAtRisk).toList();
-
-    return RefreshIndicator(
-      color: const Color(0xFF2E6BFF),
-      onRefresh: _loadDashboardData,
-      child: ListView(
-        padding: const EdgeInsets.all(20),
-        children: [
-          // Class Wellbeing Summary
-          _buildWellbeingSummary(),
-          const SizedBox(height: 24),
-
-          // Wellbeing Trend Chart
-          _sectionTitle('Class Wellbeing Trend'),
-          _buildGlassCard(child: _buildWellbeingTrendChart()),
-          const SizedBox(height: 24),
-
-          // At-Risk Students
-          if (visibleAtRisk.isNotEmpty) ...[
-            _sectionTitle('At-Risk Students (${visibleAtRisk.length})'),
-            ...visibleAtRisk.map(_buildAtRiskCard),
-            const SizedBox(height: 24),
-          ],
-
-          // All Student Wellbeing Scores
-          _sectionTitle('All Student Wellbeing'),
-          _buildAllWellbeingList(),
-          const SizedBox(height: 40),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildWellbeingSummary() {
-    final visibleWellbeing = _visibleWellbeing();
-    final avgScore = visibleWellbeing.isEmpty
-        ? 0.0
-        : visibleWellbeing.fold<double>(0, (s, w) => s + w.wellbeingScore) /
-              visibleWellbeing.length;
-    final highRisk = visibleWellbeing
-        .where((w) => w.riskLevel == RiskLevel.high)
-        .length;
-    final medRisk = visibleWellbeing
-        .where((w) => w.riskLevel == RiskLevel.medium)
-        .length;
-    final lowRisk = visibleWellbeing
-        .where((w) => w.riskLevel == RiskLevel.low)
-        .length;
-
+  Widget _buildStatsRow({required bool isDesktop}) {
     return Row(
       children: [
         Expanded(
-          child: _wellbeingSummaryCard(
-            'Avg Score',
-            avgScore.toStringAsFixed(0),
-            _riskColor(
-              avgScore >= 70
-                  ? RiskLevel.low
-                  : avgScore >= 40
-                  ? RiskLevel.medium
-                  : RiskLevel.high,
-            ),
-            Icons.favorite_rounded,
+          child: _statCard(
+            title: 'Quiz Average',
+            value: '${_avgQuizScore.toStringAsFixed(1)}%',
+            color: const Color(0xFFFF6B6B),
+            icon: Icons.quiz_rounded,
           ),
         ),
-        const SizedBox(width: 10),
+        const SizedBox(width: 14),
         Expanded(
-          child: _wellbeingSummaryCard(
-            'Low Risk',
-            lowRisk.toString(),
-            const Color(0xFF6BCB77),
-            Icons.check_circle_rounded,
+          child: _statCard(
+            title: 'Class Attendance',
+            value: '${_calculateAverage('attendance').toStringAsFixed(0)}%',
+            color: const Color(0xFF10B981),
+            icon: Icons.how_to_reg_rounded,
           ),
         ),
-        const SizedBox(width: 10),
+        const SizedBox(width: 14),
         Expanded(
-          child: _wellbeingSummaryCard(
-            'Medium',
-            medRisk.toString(),
-            const Color(0xFFFFD93D),
-            Icons.warning_rounded,
-          ),
-        ),
-        const SizedBox(width: 10),
-        Expanded(
-          child: _wellbeingSummaryCard(
-            'High Risk',
-            highRisk.toString(),
-            const Color(0xFFFF4757),
-            Icons.error_rounded,
+          child: _statCard(
+            title: 'PBL Score Avg',
+            value: _avgPBLScore.toStringAsFixed(1),
+            color: const Color(0xFFFFD93D),
+            icon: Icons.engineering_rounded,
           ),
         ),
       ],
     );
   }
 
-  Widget _wellbeingSummaryCard(
-    String label,
-    String value,
-    Color color,
-    IconData icon,
-  ) {
+  Widget _statCard({
+    required String title,
+    required String value,
+    required Color color,
+    required IconData icon,
+  }) {
     return Container(
-      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.1),
+        gradient: LinearGradient(
+          colors: [
+            color.withValues(alpha: 0.9),
+            color.withValues(alpha: 0.65),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: color.withValues(alpha: 0.3)),
+        boxShadow: [
+          BoxShadow(
+            color: color.withValues(alpha: 0.2),
+            blurRadius: 8,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
+      padding: const EdgeInsets.all(16),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, color: color, size: 20),
-          const SizedBox(height: 6),
+          Icon(icon, color: Colors.white, size: 22),
+          const SizedBox(height: 10),
+          Text(
+            title,
+            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: Colors.white70),
+          ),
+          const SizedBox(height: 3),
           Text(
             value,
-            style: TextStyle(
-              fontSize: 22,
-              fontWeight: FontWeight.w800,
-              color: color,
-            ),
-          ),
-          const SizedBox(height: 2),
-          Text(
-            label,
-            style: const TextStyle(fontSize: 10, color: Color(0xFF5C6B8C)),
-            textAlign: TextAlign.center,
+            style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w800, color: Colors.white),
           ),
         ],
       ),
     );
   }
 
+  // --- Exact FL Chart Performance Chart ---
+  Widget _performanceChart() {
+    return BarChart(
+      BarChartData(
+        borderData: FlBorderData(show: false),
+        gridData: FlGridData(
+          show: true,
+          drawVerticalLine: false,
+          horizontalInterval: 25,
+          getDrawingHorizontalLine: (value) => FlLine(
+            color: const Color(0xFFE2E8F0),
+            strokeWidth: 1,
+          ),
+        ),
+        titlesData: FlTitlesData(
+          bottomTitles: AxisTitles(
+            sideTitles: SideTitles(
+              showTitles: true,
+              getTitlesWidget: (value, meta) {
+                const titles = ['Quiz', 'Community', 'PBL'];
+                if (value.toInt() < titles.length) {
+                  return Padding(
+                    padding: const EdgeInsets.only(top: 8),
+                    child: Text(
+                      titles[value.toInt()],
+                      style: const TextStyle(
+                        color: Color(0xFF64748B),
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  );
+                }
+                return const SizedBox.shrink();
+              },
+            ),
+          ),
+          leftTitles: AxisTitles(
+            sideTitles: SideTitles(
+              showTitles: true,
+              interval: 25,
+              getTitlesWidget: (value, meta) => Text(
+                '${value.toInt()}',
+                style: const TextStyle(color: Color(0xFF94A3B8), fontSize: 10),
+              ),
+            ),
+          ),
+          rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+          topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+        ),
+        barGroups: [
+          _buildBarGroup(0, _avgQuizScore, const Color(0xFFFF6B6B)),
+          _buildBarGroup(1, _avgCommunityScore, const Color(0xFF4ECDC4)),
+          _buildBarGroup(2, _avgPBLScore, const Color(0xFFFFD93D)),
+        ],
+      ),
+    );
+  }
+
+  BarChartGroupData _buildBarGroup(int x, double y, Color color) {
+    return BarChartGroupData(
+      x: x,
+      barRods: [
+        BarChartRodData(
+          toY: y.clamp(0.0, 100.0),
+          color: color,
+          width: 38,
+          borderRadius: BorderRadius.circular(8),
+          backDrawRodData: BackgroundBarChartRodData(
+            show: true,
+            toY: 100,
+            color: const Color(0xFFF1F5F9),
+          ),
+        ),
+      ],
+    );
+  }
+
+  // --- Exact Attendance Widget ---
+  Widget _attendanceWidget(double value) {
+    return Center(
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          SizedBox(
+            width: 140,
+            height: 140,
+            child: CircularProgressIndicator(
+              value: (value / 100).clamp(0.0, 1.0),
+              strokeWidth: 12,
+              color: const Color(0xFF10B981),
+              backgroundColor: const Color(0xFFE2E8F0),
+            ),
+          ),
+          Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                '${value.toStringAsFixed(1)}%',
+                style: const TextStyle(
+                  fontSize: 26,
+                  fontWeight: FontWeight.w800,
+                  color: Color(0xFF1E293B),
+                ),
+              ),
+              const SizedBox(height: 2),
+              const Text(
+                'Present',
+                style: TextStyle(fontSize: 12, color: Color(0xFF64748B), fontWeight: FontWeight.w500),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  // --- Exact Wellbeing Trend Chart ---
   Widget _buildWellbeingTrendChart() {
     final visibleWellbeing = _visibleWellbeing();
 
     if (visibleWellbeing.isEmpty) {
       return const Center(
         child: Text(
-          'No wellbeing data yet',
-          style: TextStyle(color: Color(0xFF5C6B8C)),
+          'No wellbeing data recorded yet',
+          style: TextStyle(color: Color(0xFF64748B)),
         ),
       );
     }
 
-    // Use the longest available trend
     List<double>? longestTrend;
     for (final wb in visibleWellbeing) {
       if (wb.trendScores.length > (longestTrend?.length ?? 0)) {
@@ -1031,7 +1418,6 @@ class _TeacherDashboardPageState extends State<TeacherDashboardPage>
       }
     }
 
-    // If no historical data, create from current scores
     if (longestTrend == null || longestTrend.isEmpty) {
       longestTrend = visibleWellbeing.map((w) => w.wellbeingScore).toList();
     }
@@ -1048,19 +1434,19 @@ class _TeacherDashboardPageState extends State<TeacherDashboardPage>
           drawVerticalLine: false,
           horizontalInterval: 20,
           getDrawingHorizontalLine: (value) =>
-              FlLine(color: const Color(0x1A2E6BFF), strokeWidth: 1),
+              const FlLine(color: Color(0xFFE2E8F0), strokeWidth: 1),
         ),
         titlesData: FlTitlesData(
           bottomTitles: AxisTitles(
             sideTitles: SideTitles(
               showTitles: true,
               getTitlesWidget: (value, meta) {
-                if (value.toInt() % 3 == 0) {
-                  return Text(
-                    'D${value.toInt() + 1}',
-                    style: const TextStyle(
-                      color: Color(0xFF5C6B8C),
-                      fontSize: 10,
+                if (value.toInt() % 2 == 0) {
+                  return Padding(
+                    padding: const EdgeInsets.only(top: 8),
+                    child: Text(
+                      'Day ${value.toInt() + 1}',
+                      style: const TextStyle(color: Color(0xFF64748B), fontSize: 11),
                     ),
                   );
                 }
@@ -1074,16 +1460,12 @@ class _TeacherDashboardPageState extends State<TeacherDashboardPage>
               interval: 25,
               getTitlesWidget: (value, meta) => Text(
                 '${value.toInt()}',
-                style: const TextStyle(color: Color(0xFF5C6B8C), fontSize: 10),
+                style: const TextStyle(color: Color(0xFF94A3B8), fontSize: 10),
               ),
             ),
           ),
-          rightTitles: const AxisTitles(
-            sideTitles: SideTitles(showTitles: false),
-          ),
-          topTitles: const AxisTitles(
-            sideTitles: SideTitles(showTitles: false),
-          ),
+          rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+          topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
         ),
         minY: 0,
         maxY: 100,
@@ -1097,7 +1479,7 @@ class _TeacherDashboardPageState extends State<TeacherDashboardPage>
               show: true,
               getDotPainter: (spot, percent, barData, index) =>
                   FlDotCirclePainter(
-                    radius: 3,
+                    radius: 4,
                     color: const Color(0xFF2E6BFF),
                     strokeWidth: 2,
                     strokeColor: Colors.white,
@@ -1115,12 +1497,12 @@ class _TeacherDashboardPageState extends State<TeacherDashboardPage>
               ),
             ),
           ),
-          // Risk threshold line
+          // Risk threshold line (40)
           LineChartBarData(
             spots: List.generate(spots.length, (i) => FlSpot(i.toDouble(), 40)),
             isCurved: false,
-            color: const Color(0xFFFF4757).withValues(alpha: 0.4),
-            barWidth: 1,
+            color: const Color(0xFFFF4757).withValues(alpha: 0.5),
+            barWidth: 1.5,
             dotData: const FlDotData(show: false),
             dashArray: [5, 5],
           ),
@@ -1129,292 +1511,508 @@ class _TeacherDashboardPageState extends State<TeacherDashboardPage>
     );
   }
 
-  // =================== AT-RISK CARD ===================
+  Widget _buildWellbeingSummary({required bool isDesktop}) {
+    final visibleWellbeing = _visibleWellbeing();
+    final avgScore = visibleWellbeing.isEmpty
+        ? 0.0
+        : visibleWellbeing.fold<double>(0, (s, w) => s + w.wellbeingScore) /
+            visibleWellbeing.length;
+    final highRisk = visibleWellbeing.where((w) => w.riskLevel == RiskLevel.high).length;
+    final medRisk = visibleWellbeing.where((w) => w.riskLevel == RiskLevel.medium).length;
+    final lowRisk = visibleWellbeing.where((w) => w.riskLevel == RiskLevel.low).length;
 
+    final cards = [
+      _wellbeingSummaryCard(
+        'Average Score',
+        avgScore.toStringAsFixed(0),
+        _riskColor(
+          avgScore >= 70
+              ? RiskLevel.low
+              : avgScore >= 40
+                  ? RiskLevel.medium
+                  : RiskLevel.high,
+        ),
+        Icons.favorite_rounded,
+      ),
+      _wellbeingSummaryCard(
+        'Low Risk',
+        lowRisk.toString(),
+        const Color(0xFF10B981),
+        Icons.check_circle_rounded,
+      ),
+      _wellbeingSummaryCard(
+        'Medium Risk',
+        medRisk.toString(),
+        const Color(0xFFFFD93D),
+        Icons.warning_rounded,
+      ),
+      _wellbeingSummaryCard(
+        'High Risk',
+        highRisk.toString(),
+        const Color(0xFFFF4757),
+        Icons.error_rounded,
+      ),
+    ];
+
+    return Row(
+      children: cards.map((c) => Expanded(child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 6),
+        child: c,
+      ))).toList(),
+    );
+  }
+
+  Widget _wellbeingSummaryCard(String label, String value, Color color, IconData icon) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: color.withValues(alpha: 0.3)),
+        boxShadow: [
+          BoxShadow(
+            color: color.withValues(alpha: 0.06),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          Icon(icon, color: color, size: 22),
+          const SizedBox(height: 8),
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.w800,
+              color: color,
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            label,
+            style: const TextStyle(fontSize: 11, color: Color(0xFF64748B), fontWeight: FontWeight.w500),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildWeakConceptsSection() {
+    return Wrap(
+      spacing: 10,
+      runSpacing: 10,
+      children: _weakConcepts.map((concept) {
+        return Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+          decoration: BoxDecoration(
+            color: const Color(0xFFFF6B6B).withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: const Color(0xFFFF6B6B).withValues(alpha: 0.3)),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                concept['concept'],
+                style: const TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: Color(0xFF1E293B),
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                '${concept['count']} students struggling',
+                style: const TextStyle(fontSize: 11, color: Color(0xFFFF6B6B), fontWeight: FontWeight.w500),
+              ),
+            ],
+          ),
+        );
+      }).toList(),
+    );
+  }
+
+  Widget _buildTopPerformersSection() {
+    final topThree = _getTopPerformers();
+    if (topThree.isEmpty) {
+      return const Center(
+        child: Padding(
+          padding: EdgeInsets.all(16),
+          child: Text('No student data recorded', style: TextStyle(color: Color(0xFF64748B))),
+        ),
+      );
+    }
+
+    const medals = ['🥇', '🥈', '🥉'];
+    const colors = [Color(0xFFFFD700), Color(0xFFC0C0C0), Color(0xFFCD7F32)];
+
+    return Column(
+      children: List.generate(topThree.length, (index) {
+        final student = topThree[index];
+        return Container(
+          margin: const EdgeInsets.only(bottom: 10),
+          decoration: BoxDecoration(
+            color: colors[index].withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: colors[index].withValues(alpha: 0.4), width: 1.5),
+          ),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+          child: Row(
+            children: [
+              Text(medals[index], style: const TextStyle(fontSize: 22)),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      student['name'] as String,
+                      style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: Color(0xFF1E293B)),
+                    ),
+                    Text(
+                      'XP: ${(student['xp'] as double).toInt()} • Quiz: ${(student['quiz_score'] as double).toInt()}%',
+                      style: const TextStyle(fontSize: 11, color: Color(0xFF64748B)),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        );
+      }),
+    );
+  }
+
+  Widget _buildSearchBar() {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: TextField(
+        controller: _searchController,
+        onChanged: _filterStudents,
+        style: const TextStyle(color: Color(0xFF1E293B)),
+        decoration: InputDecoration(
+          icon: const Icon(Icons.search, color: Color(0xFF64748B)),
+          hintText: 'Search student by name or email...',
+          hintStyle: const TextStyle(color: Color(0xFF94A3B8)),
+          border: InputBorder.none,
+          suffixIcon: _searchController.text.isNotEmpty
+              ? IconButton(
+                  icon: const Icon(Icons.clear, color: Color(0xFF64748B)),
+                  onPressed: () {
+                    _searchController.clear();
+                    _filterStudents('');
+                  },
+                )
+              : null,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStudentsTable() {
+    if (_filteredStudents.isEmpty) {
+      return const Center(
+        child: Padding(
+          padding: EdgeInsets.all(32),
+          child: Text('No student records found matching filter.', style: TextStyle(color: Color(0xFF64748B))),
+        ),
+      );
+    }
+
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: DataTable(
+        headingRowColor: WidgetStateProperty.all(const Color(0xFFF8FAFC)),
+        dataRowMinHeight: 48,
+        dataRowMaxHeight: 56,
+        columns: const [
+          DataColumn(label: Text('Student Name', style: TextStyle(color: Color(0xFF1E293B), fontWeight: FontWeight.w700))),
+          DataColumn(label: Text('Quiz Avg', style: TextStyle(color: Color(0xFF1E293B), fontWeight: FontWeight.w700))),
+          DataColumn(label: Text('Attendance', style: TextStyle(color: Color(0xFF1E293B), fontWeight: FontWeight.w700))),
+          DataColumn(label: Text('PBL Score', style: TextStyle(color: Color(0xFF1E293B), fontWeight: FontWeight.w700))),
+          DataColumn(label: Text('Total XP', style: TextStyle(color: Color(0xFF1E293B), fontWeight: FontWeight.w700))),
+          DataColumn(label: Text('Wellbeing Index', style: TextStyle(color: Color(0xFF1E293B), fontWeight: FontWeight.w700))),
+        ],
+        rows: _filteredStudents.map((student) {
+          final wb = _wellbeingData.where((w) => w.studentId == student['id']);
+          final wbScore = wb.isNotEmpty ? wb.first.wellbeingScore : -1.0;
+          final wbRisk = wb.isNotEmpty ? wb.first.riskLevel : RiskLevel.low;
+          final wbColor = wbScore < 0 ? const Color(0xFF64748B) : _riskColor(wbRisk);
+
+          return DataRow(
+            cells: [
+              DataCell(
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(student['name'] as String, style: const TextStyle(fontWeight: FontWeight.w600, color: Color(0xFF1E293B))),
+                    if ((student['email'] as String).isNotEmpty)
+                      Text(student['email'] as String, style: const TextStyle(fontSize: 11, color: Color(0xFF94A3B8))),
+                  ],
+                ),
+              ),
+              DataCell(
+                Text('${(student['quiz_score'] as double).toInt()}%', style: const TextStyle(color: Color(0xFFFF6B6B), fontWeight: FontWeight.w600)),
+              ),
+              DataCell(
+                Text('${(student['attendance'] as double).toInt()}%', style: const TextStyle(color: Color(0xFF10B981), fontWeight: FontWeight.w600)),
+              ),
+              DataCell(
+                Text('${(student['pbl_score'] as double).toInt()}', style: const TextStyle(color: Color(0xFFFFD93D), fontWeight: FontWeight.w600)),
+              ),
+              DataCell(
+                Text('${(student['xp'] as double).toInt()}', style: const TextStyle(color: Color(0xFFFF9F43), fontWeight: FontWeight.w600)),
+              ),
+              DataCell(
+                wbScore < 0
+                    ? const Text('—', style: TextStyle(color: Color(0xFF94A3B8)))
+                    : Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: wbColor.withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(6),
+                          border: Border.all(color: wbColor.withValues(alpha: 0.3)),
+                        ),
+                        child: Text(
+                          wbScore.toStringAsFixed(0),
+                          style: TextStyle(color: wbColor, fontWeight: FontWeight.w800, fontSize: 12),
+                        ),
+                      ),
+              ),
+            ],
+          );
+        }).toList(),
+      ),
+    );
+  }
+
+  // --- Exact At-Risk Card Implementation ---
   Widget _buildAtRiskCard(StudentWellbeing wb) {
     final isExpanded = _expandedCards.contains(wb.studentId);
     final riskColor = _riskColor(wb.riskLevel);
     final recs = _recommendations[wb.studentId];
     final isLoadingRec = _loadingRecommendations.contains(wb.studentId);
 
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 14),
-      child: Container(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(18),
-          border: Border.all(
-            color: riskColor.withValues(alpha: 0.3),
-            width: 1.5,
+    return Container(
+      margin: const EdgeInsets.only(bottom: 14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: riskColor.withValues(alpha: 0.35), width: 1.5),
+        boxShadow: [
+          BoxShadow(
+            color: riskColor.withValues(alpha: 0.08),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
           ),
-          boxShadow: [
-            BoxShadow(
-              color: riskColor.withValues(alpha: 0.1),
-              blurRadius: 16,
-              offset: const Offset(0, 6),
-            ),
-          ],
-        ),
-        child: Column(
-          children: [
-            // Header Row
-            InkWell(
-              onTap: () {
-                setState(() {
-                  if (isExpanded) {
-                    _expandedCards.remove(wb.studentId);
-                  } else {
-                    _expandedCards.add(wb.studentId);
-                    _loadRecommendations(wb);
-                  }
-                });
-              },
-              borderRadius: BorderRadius.circular(18),
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Row(
-                  children: [
-                    // Score circle
-                    SizedBox(
-                      width: 52,
-                      height: 52,
-                      child: Stack(
-                        alignment: Alignment.center,
-                        children: [
-                          CircularProgressIndicator(
-                            value: wb.wellbeingScore / 100,
-                            strokeWidth: 5,
-                            color: riskColor,
-                            backgroundColor: riskColor.withValues(alpha: 0.15),
-                          ),
-                          Text(
-                            wb.wellbeingScore.toStringAsFixed(0),
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w800,
-                              color: riskColor,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(width: 14),
-
-                    // Name & alerts
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            wb.studentName,
-                            style: const TextStyle(
-                              fontSize: 15,
-                              fontWeight: FontWeight.w700,
-                              color: Color(0xFF0D1B3D),
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Wrap(
-                            spacing: 6,
-                            runSpacing: 4,
-                            children: [
-                              _riskBadge(wb.riskLevel),
-                              ...wb.alerts
-                                  .take(2)
-                                  .map((a) => _alertCategoryChip(a)),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-
-                    // Sparkline
-                    if (wb.trendScores.length >= 2)
-                      SizedBox(
-                        width: 60,
-                        height: 30,
-                        child: _miniSparkline(wb.trendScores, riskColor),
-                      ),
-                    const SizedBox(width: 8),
-
-                    Icon(
-                      isExpanded
-                          ? Icons.expand_less_rounded
-                          : Icons.expand_more_rounded,
-                      color: const Color(0xFF5C6B8C),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-
-            // Expanded Detail
-            if (isExpanded)
-              Container(
-                decoration: BoxDecoration(
-                  color: riskColor.withValues(alpha: 0.04),
-                  borderRadius: const BorderRadius.only(
-                    bottomLeft: Radius.circular(18),
-                    bottomRight: Radius.circular(18),
-                  ),
-                ),
-                padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Divider(height: 1),
-                    const SizedBox(height: 12),
-
-                    // Metrics row
-                    Row(
+        ],
+      ),
+      child: Column(
+        children: [
+          InkWell(
+            onTap: () {
+              setState(() {
+                if (isExpanded) {
+                  _expandedCards.remove(wb.studentId);
+                } else {
+                  _expandedCards.add(wb.studentId);
+                  _loadRecommendations(wb);
+                }
+              });
+            },
+            borderRadius: BorderRadius.circular(16),
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                children: [
+                  SizedBox(
+                    width: 48,
+                    height: 48,
+                    child: Stack(
+                      alignment: Alignment.center,
                       children: [
-                        _metricChip(
-                          'Quiz',
-                          '${wb.quizAvg.toStringAsFixed(0)}%',
-                          wb.quizAvg < 40
-                              ? const Color(0xFFFF4757)
-                              : const Color(0xFF6BCB77),
+                        CircularProgressIndicator(
+                          value: (wb.wellbeingScore / 100).clamp(0.0, 1.0),
+                          strokeWidth: 5,
+                          color: riskColor,
+                          backgroundColor: riskColor.withValues(alpha: 0.15),
                         ),
-                        const SizedBox(width: 8),
-                        _metricChip(
-                          'Attend',
-                          '${wb.attendanceRate.toStringAsFixed(0)}%',
-                          wb.attendanceRate < 60
-                              ? const Color(0xFFFF4757)
-                              : const Color(0xFF6BCB77),
-                        ),
-                        const SizedBox(width: 8),
-                        _metricChip(
-                          'PBL',
-                          '${wb.assignmentCompletion.toStringAsFixed(0)}%',
-                          wb.assignmentCompletion < 40
-                              ? const Color(0xFFFFD93D)
-                              : const Color(0xFF6BCB77),
-                        ),
-                        const SizedBox(width: 8),
-                        _metricChip(
-                          'XP',
-                          wb.xp.toStringAsFixed(0),
-                          const Color(0xFF00D9FF),
+                        Text(
+                          wb.wellbeingScore.toStringAsFixed(0),
+                          style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: riskColor),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 14),
-
-                    // Alert messages
-                    ...wb.alerts.map(
-                      (a) => Padding(
-                        padding: const EdgeInsets.only(bottom: 8),
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          wb.studentName,
+                          style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: Color(0xFF1E293B)),
+                        ),
+                        const SizedBox(height: 4),
+                        Wrap(
+                          spacing: 6,
+                          runSpacing: 4,
                           children: [
-                            Text(
-                              a.categoryEmoji,
-                              style: const TextStyle(fontSize: 14),
-                            ),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Text(
-                                a.message,
-                                style: const TextStyle(
-                                  fontSize: 12,
-                                  color: Color(0xFF5C6B8C),
-                                  height: 1.4,
-                                ),
-                              ),
-                            ),
+                            _riskBadge(wb.riskLevel),
+                            ...wb.alerts.take(2).map((a) => _alertCategoryChip(a)),
                           ],
                         ),
-                      ),
+                      ],
                     ),
-                    const SizedBox(height: 10),
-
-                    // AI Recommendations
-                    const Text(
-                      'AI Recommendations',
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w700,
-                        color: Color(0xFF2E6BFF),
-                      ),
+                  ),
+                  if (wb.trendScores.length >= 2)
+                    SizedBox(
+                      width: 60,
+                      height: 28,
+                      child: _miniSparkline(wb.trendScores, riskColor),
                     ),
-                    const SizedBox(height: 8),
-
-                    if (isLoadingRec)
-                      const Padding(
-                        padding: EdgeInsets.symmetric(vertical: 20),
-                        child: Center(
-                          child: SizedBox(
-                            width: 24,
-                            height: 24,
-                            child: CcLoadingAnimation(
-                              strokeWidth: 2,
-                              color: Color(0xFF2E6BFF),
-                            ),
-                          ),
-                        ),
-                      )
-                    else if (recs != null)
-                      ...recs.map((rec) => _recommendationCard(rec))
-                    else
-                      const Text(
-                        'Tap to load AI recommendations...',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Color(0xFF5C6B8C),
-                        ),
-                      ),
-
-                    const SizedBox(height: 12),
-
-                    // Quick Actions
-                    const Text(
-                      'Quick Actions',
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w700,
-                        color: Color(0xFF0D1B3D),
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
-                      child: Row(
-                        children: [
-                          _quickActionBtn(
-                            'Assign Easier Content',
-                            Icons.auto_stories_rounded,
-                            const Color(0xFF2E6BFF),
-                          ),
-                          const SizedBox(width: 8),
-                          _quickActionBtn(
-                            'Give Revision Tasks',
-                            Icons.replay_rounded,
-                            const Color(0xFF6BCB77),
-                          ),
-                          const SizedBox(width: 8),
-                          _quickActionBtn(
-                            'Schedule 1-on-1',
-                            Icons.person_rounded,
-                            const Color(0xFFFF9F43),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
+                  const SizedBox(width: 8),
+                  Icon(
+                    isExpanded ? Icons.expand_less_rounded : Icons.expand_more_rounded,
+                    color: const Color(0xFF64748B),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          if (isExpanded)
+            Container(
+              decoration: BoxDecoration(
+                color: riskColor.withValues(alpha: 0.03),
+                borderRadius: const BorderRadius.only(
+                  bottomLeft: Radius.circular(16),
+                  bottomRight: Radius.circular(16),
                 ),
               ),
-          ],
-        ),
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Divider(height: 1),
+                  const SizedBox(height: 14),
+                  Row(
+                    children: [
+                      _metricChip('Quiz', '${wb.quizAvg.toStringAsFixed(0)}%', wb.quizAvg < 40 ? const Color(0xFFFF4757) : const Color(0xFF10B981)),
+                      const SizedBox(width: 8),
+                      _metricChip('Attend', '${wb.attendanceRate.toStringAsFixed(0)}%', wb.attendanceRate < 60 ? const Color(0xFFFF4757) : const Color(0xFF10B981)),
+                      const SizedBox(width: 8),
+                      _metricChip('PBL', '${wb.assignmentCompletion.toStringAsFixed(0)}%', wb.assignmentCompletion < 40 ? const Color(0xFFFFD93D) : const Color(0xFF10B981)),
+                      const SizedBox(width: 8),
+                      _metricChip('XP', wb.xp.toStringAsFixed(0), const Color(0xFF00D9FF)),
+                    ],
+                  ),
+                  const SizedBox(height: 14),
+                  ...wb.alerts.map((a) => Padding(
+                    padding: const EdgeInsets.only(bottom: 6),
+                    child: Row(
+                      children: [
+                        Text(a.categoryEmoji, style: const TextStyle(fontSize: 14)),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(a.message, style: const TextStyle(fontSize: 12, color: Color(0xFF64748B))),
+                        ),
+                      ],
+                    ),
+                  )),
+                  const SizedBox(height: 14),
+                  const Text('AI Personalized Recommendations', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Color(0xFF2E6BFF))),
+                  const SizedBox(height: 8),
+                  if (isLoadingRec)
+                    const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 16),
+                      child: Center(child: SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF2E6BFF)))),
+                    )
+                  else if (recs != null)
+                    ...recs.map((rec) => _recommendationCard(rec))
+                  else
+                    const Text('Tap to load AI recommendations...', style: TextStyle(fontSize: 12, color: Color(0xFF64748B))),
+                ],
+              ),
+            ),
+        ],
       ),
     );
   }
 
-  Widget _miniSparkline(List<double> data, Color color) {
-    final spots = List.generate(
-      data.length,
-      (i) => FlSpot(i.toDouble(), data[i]),
+  Widget _buildAllWellbeingList() {
+    final visibleWellbeing = _visibleWellbeing();
+
+    if (visibleWellbeing.isEmpty) {
+      return const Center(
+        child: Padding(
+          padding: EdgeInsets.all(20),
+          child: Text('No wellbeing data available', style: TextStyle(color: Color(0xFF64748B))),
+        ),
+      );
+    }
+
+    return Column(
+      children: visibleWellbeing.map((wb) {
+        final riskColor = _riskColor(wb.riskLevel);
+        return Container(
+          margin: const EdgeInsets.only(bottom: 8),
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: const Color(0xFFE2E8F0)),
+          ),
+          child: Row(
+            children: [
+              SizedBox(
+                width: 38,
+                height: 38,
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    CircularProgressIndicator(
+                      value: (wb.wellbeingScore / 100).clamp(0.0, 1.0),
+                      strokeWidth: 4,
+                      color: riskColor,
+                      backgroundColor: riskColor.withValues(alpha: 0.15),
+                    ),
+                    Text(
+                      wb.wellbeingScore.toStringAsFixed(0),
+                      style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: riskColor),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(wb.studentName, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFF1E293B))),
+                    Text('Quiz: ${wb.quizAvg.toStringAsFixed(0)}% • Attend: ${wb.attendanceRate.toStringAsFixed(0)}% • XP: ${wb.xp.toStringAsFixed(0)}', style: const TextStyle(fontSize: 11, color: Color(0xFF94A3B8))),
+                  ],
+                ),
+              ),
+              _riskBadge(wb.riskLevel),
+            ],
+          ),
+        );
+      }).toList(),
     );
+  }
+
+  Widget _miniSparkline(List<double> data, Color color) {
+    final spots = List.generate(data.length, (i) => FlSpot(i.toDouble(), data[i]));
     return LineChart(
       LineChartData(
         gridData: const FlGridData(show: false),
@@ -1442,11 +2040,7 @@ class _TeacherDashboardPageState extends State<TeacherDashboardPage>
 
   Widget _riskBadge(RiskLevel level) {
     final color = _riskColor(level);
-    final label = level == RiskLevel.high
-        ? 'HIGH'
-        : level == RiskLevel.medium
-        ? 'MEDIUM'
-        : 'LOW';
+    final label = level == RiskLevel.high ? 'HIGH RISK' : level == RiskLevel.medium ? 'MEDIUM RISK' : 'LOW RISK';
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(
@@ -1456,12 +2050,7 @@ class _TeacherDashboardPageState extends State<TeacherDashboardPage>
       ),
       child: Text(
         label,
-        style: TextStyle(
-          fontSize: 9,
-          fontWeight: FontWeight.w800,
-          color: color,
-          letterSpacing: 0.5,
-        ),
+        style: TextStyle(fontSize: 9, fontWeight: FontWeight.w800, color: color, letterSpacing: 0.5),
       ),
     );
   }
@@ -1476,7 +2065,7 @@ class _TeacherDashboardPageState extends State<TeacherDashboardPage>
         chipColor = const Color(0xFFFF4757);
         break;
       case AlertCategory.disengagement:
-        chipColor = const Color(0xFF5C6B8C);
+        chipColor = const Color(0xFF64748B);
         break;
     }
     return Container(
@@ -1487,11 +2076,7 @@ class _TeacherDashboardPageState extends State<TeacherDashboardPage>
       ),
       child: Text(
         '${alert.categoryEmoji} ${alert.categoryLabel}',
-        style: TextStyle(
-          fontSize: 9,
-          fontWeight: FontWeight.w600,
-          color: chipColor,
-        ),
+        style: TextStyle(fontSize: 9, fontWeight: FontWeight.w600, color: chipColor),
       ),
     );
   }
@@ -1499,25 +2084,15 @@ class _TeacherDashboardPageState extends State<TeacherDashboardPage>
   Widget _metricChip(String label, String value, Color color) {
     return Expanded(
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
         decoration: BoxDecoration(
           color: color.withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(8),
         ),
         child: Column(
           children: [
-            Text(
-              value,
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w700,
-                color: color,
-              ),
-            ),
-            Text(
-              label,
-              style: const TextStyle(fontSize: 9, color: Color(0xFF5C6B8C)),
-            ),
+            Text(value, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: color)),
+            Text(label, style: const TextStyle(fontSize: 9, color: Color(0xFF64748B))),
           ],
         ),
       ),
@@ -1525,205 +2100,53 @@ class _TeacherDashboardPageState extends State<TeacherDashboardPage>
   }
 
   Widget _recommendationCard(WellbeingRecommendation rec) {
-    Color actionColor;
-    switch (rec.actionType) {
-      case 'content':
-        actionColor = const Color(0xFF2E6BFF);
-        break;
-      case 'engagement':
-        actionColor = const Color(0xFF6BCB77);
-        break;
-      case 'motivation':
-        actionColor = const Color(0xFFFFD93D);
-        break;
-      default:
-        actionColor = const Color(0xFF8B5CF6);
-    }
-
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: Container(
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: actionColor.withValues(alpha: 0.2)),
-        ),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(rec.icon, style: const TextStyle(fontSize: 18)),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    rec.title,
-                    style: const TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: Color(0xFF0D1B3D),
-                    ),
-                  ),
-                  const SizedBox(height: 3),
-                  Text(
-                    rec.description,
-                    style: const TextStyle(
-                      fontSize: 11,
-                      color: Color(0xFF5C6B8C),
-                      height: 1.4,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _quickActionBtn(String label, IconData icon, Color color) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: () {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('$label action triggered'),
-              backgroundColor: color,
-              duration: const Duration(seconds: 2),
-            ),
-          );
-        },
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white,
         borderRadius: BorderRadius.circular(10),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-          decoration: BoxDecoration(
-            color: color.withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(color: color.withValues(alpha: 0.3)),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(icon, size: 14, color: color),
-              const SizedBox(width: 6),
-              Text(
-                label,
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w600,
-                  color: color,
-                ),
-              ),
-            ],
-          ),
-        ),
+        border: Border.all(color: const Color(0xFF2E6BFF).withValues(alpha: 0.2)),
       ),
-    );
-  }
-
-  // =================== ALL WELLBEING LIST ===================
-
-  Widget _buildAllWellbeingList() {
-    final visibleWellbeing = _visibleWellbeing();
-
-    if (visibleWellbeing.isEmpty) {
-      return const Center(
-        child: Padding(
-          padding: EdgeInsets.all(20),
-          child: Text(
-            'No wellbeing data available',
-            style: TextStyle(color: Color(0xFF5C6B8C)),
-          ),
-        ),
-      );
-    }
-
-    return Column(
-      children: visibleWellbeing.map((wb) {
-        final riskColor = _riskColor(wb.riskLevel);
-        return Padding(
-          padding: const EdgeInsets.only(bottom: 8),
-          child: Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: riskColor.withValues(alpha: 0.2)),
-            ),
-            child: Row(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(rec.icon, style: const TextStyle(fontSize: 18)),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Score indicator
-                SizedBox(
-                  width: 40,
-                  height: 40,
-                  child: Stack(
-                    alignment: Alignment.center,
-                    children: [
-                      CircularProgressIndicator(
-                        value: wb.wellbeingScore / 100,
-                        strokeWidth: 4,
-                        color: riskColor,
-                        backgroundColor: riskColor.withValues(alpha: 0.15),
-                      ),
-                      Text(
-                        wb.wellbeingScore.toStringAsFixed(0),
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w800,
-                          color: riskColor,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        wb.studentName,
-                        style: const TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                          color: Color(0xFF0D1B3D),
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        'Quiz: ${wb.quizAvg.toStringAsFixed(0)}% • Attend: ${wb.attendanceRate.toStringAsFixed(0)}% • XP: ${wb.xp.toStringAsFixed(0)}',
-                        style: const TextStyle(
-                          fontSize: 10,
-                          color: Color(0xFF5C6B8C),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                _riskBadge(wb.riskLevel),
+                Text(rec.title, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFF1E293B))),
+                const SizedBox(height: 3),
+                Text(rec.description, style: const TextStyle(fontSize: 11, color: Color(0xFF64748B), height: 1.4)),
               ],
             ),
           ),
-        );
-      }).toList(),
+        ],
+      ),
     );
   }
 
-  // =================== SHARED WIDGETS ===================
-
-  Color _riskColor(RiskLevel level) {
-    switch (level) {
-      case RiskLevel.low:
-        return const Color(0xFF6BCB77);
-      case RiskLevel.medium:
-        return const Color(0xFFFFD93D);
-      case RiskLevel.high:
-        return const Color(0xFFFF4757);
-    }
+  Widget _buildGlassCard({required Widget child, double height = 240}) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFE2E8F0), width: 1.2),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.03),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: SizedBox(height: height, child: child),
+      ),
+    );
   }
 
   Widget _sectionTitle(String title) {
@@ -1732,537 +2155,22 @@ class _TeacherDashboardPageState extends State<TeacherDashboardPage>
       child: Text(
         title,
         style: const TextStyle(
-          fontSize: 17,
+          fontSize: 16,
           fontWeight: FontWeight.w700,
-          color: Color(0xFF2E6BFF),
+          color: Color(0xFF1E293B),
         ),
       ),
     );
   }
 
-  Widget _buildGlassCard({required Widget child}) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0x1A2E6BFF), width: 1.2),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFF2E6BFF).withValues(alpha: 0.08),
-            blurRadius: 14,
-            offset: const Offset(0, 6),
-          ),
-        ],
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: SizedBox(height: 220, child: child),
-      ),
-    );
-  }
-
-  Widget _buildStatsRow() {
-    return Row(
-      children: [
-        Expanded(
-          child: _statCard(
-            title: 'Quiz Avg',
-            value: _avgQuizScore.toStringAsFixed(1),
-            color: const Color(0xFFFF6B6B),
-            icon: Icons.quiz_rounded,
-          ),
-        ),
-        const SizedBox(width: 10),
-        Expanded(
-          child: _statCard(
-            title: 'Attendance',
-            value: '${_calculateAverage('attendance').toStringAsFixed(0)}%',
-            color: const Color(0xFF6BCB77),
-            icon: Icons.how_to_reg_rounded,
-          ),
-        ),
-        const SizedBox(width: 10),
-        Expanded(
-          child: _statCard(
-            title: 'PBL Avg',
-            value: _avgPBLScore.toStringAsFixed(1),
-            color: const Color(0xFFFFD93D),
-            icon: Icons.engineering_rounded,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _statCard({
-    required String title,
-    required String value,
-    required Color color,
-    required IconData icon,
-  }) {
-    return Container(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            color.withValues(alpha: 0.85),
-            color.withValues(alpha: 0.55),
-          ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(14),
-      ),
-      padding: const EdgeInsets.all(14),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(icon, color: Colors.white.withValues(alpha: 0.9), size: 22),
-          const SizedBox(height: 8),
-          Text(
-            title,
-            style: TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.w500,
-              color: Colors.white.withValues(alpha: 0.8),
-            ),
-          ),
-          const SizedBox(height: 2),
-          Text(
-            value,
-            style: const TextStyle(
-              fontSize: 22,
-              fontWeight: FontWeight.w800,
-              color: Colors.white,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _performanceChart() {
-    return BarChart(
-      BarChartData(
-        borderData: FlBorderData(show: false),
-        titlesData: FlTitlesData(
-          bottomTitles: AxisTitles(
-            sideTitles: SideTitles(
-              showTitles: true,
-              getTitlesWidget: (value, meta) {
-                const titles = ['Quiz', 'Community', 'PBL'];
-                if (value.toInt() < titles.length) {
-                  return Padding(
-                    padding: const EdgeInsets.only(top: 6),
-                    child: Text(
-                      titles[value.toInt()],
-                      style: const TextStyle(
-                        color: Color(0xFF5C6B8C),
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  );
-                }
-                return const SizedBox.shrink();
-              },
-            ),
-          ),
-          leftTitles: AxisTitles(
-            sideTitles: SideTitles(
-              showTitles: true,
-              interval: 20,
-              getTitlesWidget: (value, meta) => Text(
-                '${value.toInt()}',
-                style: const TextStyle(color: Color(0xFF5C6B8C), fontSize: 10),
-              ),
-            ),
-          ),
-          rightTitles: const AxisTitles(
-            sideTitles: SideTitles(showTitles: false),
-          ),
-          topTitles: const AxisTitles(
-            sideTitles: SideTitles(showTitles: false),
-          ),
-        ),
-        barGroups: [
-          _buildBarGroup(0, _avgQuizScore, const Color(0xFFFF6B6B)),
-          _buildBarGroup(1, _avgCommunityScore, const Color(0xFF4ECDC4)),
-          _buildBarGroup(2, _avgPBLScore, const Color(0xFFFFD93D)),
-        ],
-      ),
-    );
-  }
-
-  BarChartGroupData _buildBarGroup(int x, double y, Color color) {
-    return BarChartGroupData(
-      x: x,
-      barRods: [
-        BarChartRodData(
-          toY: y,
-          color: color,
-          width: 36,
-          borderRadius: BorderRadius.circular(8),
-          backDrawRodData: BackgroundBarChartRodData(
-            show: true,
-            toY: 100,
-            color: Colors.white.withValues(alpha: 0.1),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _attendanceWidget(double value) {
-    return Center(
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          SizedBox(
-            width: 110,
-            height: 110,
-            child: CircularProgressIndicator(
-              value: value / 100,
-              strokeWidth: 8,
-              color: const Color(0xFF6BCB77),
-              backgroundColor: Colors.white.withValues(alpha: 0.1),
-            ),
-          ),
-          Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                '${value.toStringAsFixed(1)}%',
-                style: const TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.w800,
-                  color: Color(0xFF0D1B3D),
-                ),
-              ),
-              const Text(
-                'Present',
-                style: TextStyle(fontSize: 11, color: Color(0xFF5C6B8C)),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSearchBar() {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0x1A2E6BFF)),
-      ),
-      padding: const EdgeInsets.symmetric(horizontal: 14),
-      child: TextField(
-        controller: _searchController,
-        onChanged: _filterStudents,
-        style: const TextStyle(color: Color(0xFF0D1B3D)),
-        decoration: InputDecoration(
-          icon: const Icon(Icons.search, color: Color(0xFF5C6B8C)),
-          hintText: 'Search student...',
-          hintStyle: const TextStyle(color: Color(0xFF7A89A8)),
-          border: InputBorder.none,
-          suffixIcon: _searchController.text.isNotEmpty
-              ? IconButton(
-                  icon: const Icon(Icons.clear, color: Color(0xFF5C6B8C)),
-                  onPressed: () {
-                    _searchController.clear();
-                    _filterStudents('');
-                  },
-                )
-              : null,
-        ),
-      ),
-    );
-  }
-
-  Widget _buildWeakConceptsSection() {
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: Row(
-        children: _weakConcepts.take(6).map((concept) {
-          return Container(
-            margin: const EdgeInsets.only(right: 10),
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: const Color(0xFFFF6B6B).withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(
-                color: const Color(0xFFFF6B6B).withValues(alpha: 0.3),
-              ),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  concept['concept'],
-                  style: const TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    color: Color(0xFF0D1B3D),
-                  ),
-                ),
-                const SizedBox(height: 3),
-                Text(
-                  '${concept['count']} students',
-                  style: const TextStyle(
-                    fontSize: 10,
-                    color: Color(0xFF5C6B8C),
-                  ),
-                ),
-              ],
-            ),
-          );
-        }).toList(),
-      ),
-    );
-  }
-
-  Widget _buildTopPerformersSection() {
-    final topThree = _getTopPerformers();
-    if (topThree.isEmpty) {
-      return const Center(
-        child: Text(
-          'No student data',
-          style: TextStyle(color: Color(0xFF5C6B8C)),
-        ),
-      );
+  Color _riskColor(RiskLevel level) {
+    switch (level) {
+      case RiskLevel.low:
+        return const Color(0xFF10B981);
+      case RiskLevel.medium:
+        return const Color(0xFFFFD93D);
+      case RiskLevel.high:
+        return const Color(0xFFFF4757);
     }
-
-    const medals = ['🥇', '🥈', '🥉'];
-    const colors = [Color(0xFFFFD700), Color(0xFFC0C0C0), Color(0xFFCD7F32)];
-
-    return Column(
-      children: List.generate(topThree.length, (index) {
-        final student = topThree[index];
-        return Padding(
-          padding: const EdgeInsets.only(bottom: 10),
-          child: Container(
-            decoration: BoxDecoration(
-              color: colors[index].withValues(alpha: 0.15),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: colors[index].withValues(alpha: 0.4),
-                width: 1.5,
-              ),
-            ),
-            padding: const EdgeInsets.all(12),
-            child: Row(
-              children: [
-                Container(
-                  width: 32,
-                  height: 32,
-                  decoration: BoxDecoration(
-                    color: colors[index],
-                    shape: BoxShape.circle,
-                  ),
-                  child: Center(
-                    child: Text(
-                      '${index + 1}',
-                      style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w800,
-                        color: Colors.black,
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        student['name'] as String,
-                        style: const TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                          color: Color(0xFF0D1B3D),
-                        ),
-                      ),
-                      Text(
-                        'XP: ${(student['xp'] as double).toInt()} • Quiz: ${(student['quiz_score'] as double).toInt()}%',
-                        style: const TextStyle(
-                          fontSize: 11,
-                          color: Color(0xFF5C6B8C),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                Text(medals[index], style: const TextStyle(fontSize: 20)),
-              ],
-            ),
-          ),
-        );
-      }),
-    );
-  }
-
-  Widget _buildStudentsTable() {
-    if (_filteredStudents.isEmpty) {
-      return const Center(
-        child: Padding(
-          padding: EdgeInsets.all(20),
-          child: Text(
-            'No student data',
-            style: TextStyle(color: Color(0xFF5C6B8C)),
-          ),
-        ),
-      );
-    }
-
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: DataTable(
-        headingRowColor: WidgetStateProperty.all(
-          const Color(0xFF2E6BFF).withValues(alpha: 0.06),
-        ),
-        columns: const [
-          DataColumn(
-            label: Text(
-              'Student',
-              style: TextStyle(
-                color: Color(0xFF0D1B3D),
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-          DataColumn(
-            label: Text(
-              'Quiz %',
-              style: TextStyle(
-                color: Color(0xFF0D1B3D),
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-          DataColumn(
-            label: Text(
-              'Attend %',
-              style: TextStyle(
-                color: Color(0xFF0D1B3D),
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-          DataColumn(
-            label: Text(
-              'PBL',
-              style: TextStyle(
-                color: Color(0xFF0D1B3D),
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-          DataColumn(
-            label: Text(
-              'XP',
-              style: TextStyle(
-                color: Color(0xFF0D1B3D),
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-          DataColumn(
-            label: Text(
-              'Wellbeing',
-              style: TextStyle(
-                color: Color(0xFF0D1B3D),
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-        ],
-        rows: _filteredStudents.map((student) {
-          // Find wellbeing for this student
-          final wb = _wellbeingData.where((w) => w.studentId == student['id']);
-          final wbScore = wb.isNotEmpty ? wb.first.wellbeingScore : -1.0;
-          final wbRisk = wb.isNotEmpty ? wb.first.riskLevel : RiskLevel.low;
-          final wbColor = wbScore < 0
-              ? const Color(0xFF5C6B8C)
-              : _riskColor(wbRisk);
-
-          return DataRow(
-            cells: [
-              DataCell(
-                Text(
-                  student['name'] as String,
-                  style: const TextStyle(
-                    color: Color(0xFF0D1B3D),
-                    fontSize: 12,
-                  ),
-                ),
-              ),
-              DataCell(
-                Text(
-                  '${(student['quiz_score'] as double).toInt()}',
-                  style: const TextStyle(
-                    color: Color(0xFFFF6B6B),
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-              DataCell(
-                Text(
-                  '${(student['attendance'] as double).toInt()}%',
-                  style: const TextStyle(
-                    color: Color(0xFF6BCB77),
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-              DataCell(
-                Text(
-                  '${(student['pbl_score'] as double).toInt()}',
-                  style: const TextStyle(
-                    color: Color(0xFFFFD93D),
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-              DataCell(
-                Text(
-                  '${(student['xp'] as double).toInt()}',
-                  style: const TextStyle(
-                    color: Color(0xFFFF9F43),
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-              DataCell(
-                wbScore < 0
-                    ? const Text(
-                        '—',
-                        style: TextStyle(color: Color(0xFF5C6B8C)),
-                      )
-                    : Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 3,
-                        ),
-                        decoration: BoxDecoration(
-                          color: wbColor.withValues(alpha: 0.15),
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                        child: Text(
-                          wbScore.toStringAsFixed(0),
-                          style: TextStyle(
-                            color: wbColor,
-                            fontWeight: FontWeight.w700,
-                            fontSize: 12,
-                          ),
-                        ),
-                      ),
-              ),
-            ],
-          );
-        }).toList(),
-      ),
-    );
   }
 }

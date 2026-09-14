@@ -3,11 +3,14 @@ import 'package:demo/services/auth_service.dart';
 import 'package:flutter_floating_bottom_bar/flutter_floating_bottom_bar.dart';
 import 'package:demo/theme/app_radius.dart';
 import 'package:demo/widgets/ui/cc_floating_nav_item.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'teacher/teacher_dashboard_screen.dart';
 import 'teacher/teacher_classes_screen.dart';
 import 'teacher/teacher_settings_screen.dart';
 import 'teacher/create_class_screen.dart';
 import 'teacher_tasks/screens/teacher_task_screen.dart';
+import 'package:demo/utils/responsive_breakpoints.dart';
 
 class TeacherHome extends StatefulWidget {
   const TeacherHome({super.key});
@@ -27,134 +30,12 @@ class _TeacherHomeState extends State<TeacherHome> {
     Color(0xFF2E6BFF),
   ];
 
-  // Updated pages to match your new Nav Bar order
   final List<Widget> _pages = const [
-    TeacherDashboardPage(), // 0
-
-    TeacherTaskScreen(), // 1 → Workload
-
-    TeacherClassesPage(), // 2 → Classes
-
-    TeacherSettingsScreen(), // 3
+    TeacherDashboardScreen(),
+    TeacherTaskScreen(),
+    TeacherClassesPage(),
+    TeacherSettingsScreen(),
   ];
-
-  AppBar _buildAppBar() {
-    // Theme constants
-    const appBarBgColor = Color(0xFFF4F8FF);
-    const accentColor = Color(0xFF2E6BFF);
-
-    switch (_currentIndex) {
-      // ================= ACTIVITY (Dashboard) =================
-      case 0:
-        return AppBar(
-          backgroundColor: appBarBgColor,
-          foregroundColor: const Color(0xFF0D1B3D),
-          elevation: 0,
-          scrolledUnderElevation: 0,
-          surfaceTintColor: Colors.transparent,
-          centerTitle: true,
-          title: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: const [
-              
-              SizedBox(width: 8),
-              Text("Dashboard", style: TextStyle(color: Color(0xFF0D1B3D))),
-            ],
-          ),
-          actions: [
-            IconButton(
-              icon: const Icon(Icons.logout),
-              onPressed: () async => await _auth.signOut(),
-            ),
-          ],
-        );
-
-      // ================= Workload =================
-      case 1:
-        return AppBar(
-          backgroundColor: const Color(0xFFF4F8FF),
-          foregroundColor: const Color(0xFF0D1B3D),
-          elevation: 0,
-          scrolledUnderElevation: 0,
-          surfaceTintColor: Colors.transparent,
-          centerTitle: true,
-          title: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: const [
-              SizedBox(width:8),
-              Text("Workload", style: TextStyle(color: Color(0xFF0D1B3D))),
-            ],
-          ),
-        );
-
-      // ================= Class =================
-      case 2:
-        return AppBar(
-          backgroundColor: appBarBgColor,
-          foregroundColor: const Color(0xFF0D1B3D),
-          elevation: 0,
-          scrolledUnderElevation: 0,
-          surfaceTintColor: Colors.transparent,
-          centerTitle: true,
-          title: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: const [
-              SizedBox(width: 8),
-              Text("Classes", style: TextStyle(color: Color(0xFF0D1B3D))),
-            ],
-          ),
-          actions: [
-            PopupMenuButton<String>(
-              icon: const Icon(Icons.more_vert),
-              onSelected: (value) {
-                if (value == 'Create Class') {
-                  _navigateToCreateClassPage(context);
-                }
-              },
-              itemBuilder: (context) => const [
-                PopupMenuItem(
-                  value: 'Create Class',
-                  child: Text('Create Class'),
-                ),
-              ],
-            ),
-          ],
-        );
-
-      // ================= SETTINGS =================
-      case 3:
-        return AppBar(
-          backgroundColor: appBarBgColor,
-          foregroundColor: const Color(0xFF0D1B3D),
-          elevation: 0,
-          scrolledUnderElevation: 0,
-          surfaceTintColor: Colors.transparent,
-          centerTitle: true,
-          title: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: const [
-              SizedBox(width: 8),
-              Text("Settings", style: TextStyle(color: Color(0xFF0D1B3D))),
-            ],
-          ),
-          actions: [
-            IconButton(
-              icon: const Icon(Icons.logout),
-              onPressed: () async {
-                await _auth.signOut();
-                if (mounted) Navigator.pushReplacementNamed(context, '/login');
-              },
-            ),
-          ],
-        );
-
-      default:
-        return AppBar(
-          backgroundColor: appBarBgColor,
-          title: const Text("Teacher"),
-        );
-    }
-  }
 
   void _navigateToCreateClassPage(BuildContext context) async {
     await Navigator.push(
@@ -165,11 +46,374 @@ class _TeacherHomeState extends State<TeacherHome> {
 
   @override
   Widget build(BuildContext context) {
+    final isDesktop = ResponsiveBreakpoints.isDesktop(context);
+
+    if (isDesktop) {
+      return _buildDesktopLayout();
+    }
+
+    return _buildMobileLayout();
+  }
+
+  Widget _buildDesktopLayout() {
+    return Scaffold(
+      body: Row(
+        children: [
+          _buildSidebar(),
+          Expanded(
+            child: Container(
+              color: const Color(0xFFF8FAFC),
+              child: Column(
+                children: [
+                  _buildTopBar(),
+                  Expanded(child: _pages[_currentIndex]),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSidebar() {
+    final width = MediaQuery.of(context).size.width;
+    final sidebarWidth = width < 1050 ? 230.0 : 260.0;
+
+    return Container(
+      width: sidebarWidth,
+      height: double.infinity,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            const Color(0xFF1E293B),
+            const Color(0xFF0F172A),
+          ],
+        ),
+      ),
+      child: Column(
+        children: [
+          _buildSidebarHeader(),
+          const SizedBox(height: 24),
+          _buildSidebarNavItems(),
+          const Spacer(),
+          _buildSidebarFooter(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSidebarHeader() {
+    return Container(
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  const Color(0xFF3B82F6),
+                  const Color(0xFF60A5FA),
+                ],
+              ),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: const Icon(
+              Icons.school_rounded,
+              color: Colors.white,
+              size: 28,
+            ),
+          ),
+          const SizedBox(height: 16),
+          const Text(
+            'ClassConnect',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              letterSpacing: -0.3,
+            ),
+          ),
+          const SizedBox(height: 4),
+          const Text(
+            'Teacher Portal',
+            style: TextStyle(
+              color: Color(0xFF94A3B8),
+              fontSize: 13,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSidebarNavItems() {
+    final navItems = [
+      {'icon': Icons.dashboard_rounded, 'label': 'Dashboard'},
+      {'icon': Icons.work_outline_rounded, 'label': 'Workload'},
+      {'icon': Icons.class_rounded, 'label': 'Classes'},
+      {'icon': Icons.settings_rounded, 'label': 'Settings'},
+    ];
+
+    return Column(
+      children: List.generate(navItems.length, (index) {
+        final isSelected = _currentIndex == index;
+        final item = navItems[index];
+
+        return Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+          child: _buildNavItem(
+            icon: item['icon'] as IconData,
+            label: item['label'] as String,
+            selected: isSelected,
+            onTap: () => setState(() => _currentIndex = index),
+          ),
+        );
+      }),
+    );
+  }
+
+  Widget _buildNavItem({
+    required IconData icon,
+    required String label,
+    required bool selected,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(10),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        decoration: BoxDecoration(
+          color: selected
+              ? const Color(0xFF3B82F6).withValues(alpha: 0.12)
+              : Colors.transparent,
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: selected
+                    ? const Color(0xFF3B82F6)
+                    : const Color(0xFF334155),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(
+                icon,
+                color: selected ? Colors.white : const Color(0xFF94A3B8),
+                size: 20,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                label,
+                style: TextStyle(
+                  color: selected
+                      ? Colors.white
+                      : const Color(0xFF94A3B8),
+                  fontSize: 14,
+                  fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
+                ),
+              ),
+            ),
+            if (selected)
+              Container(
+                width: 6,
+                height: 6,
+                decoration: const BoxDecoration(
+                  color: Color(0xFF3B82F6),
+                  shape: BoxShape.circle,
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSidebarFooter() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        border: Border(
+          top: BorderSide(
+            color: const Color(0xFF334155),
+            width: 1,
+          ),
+        ),
+      ),
+      child: InkWell(
+        onTap: () async => await _auth.signOut(),
+        borderRadius: BorderRadius.circular(10),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.red.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(
+                  Icons.logout_rounded,
+                  color: Colors.red,
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 12),
+              const Text(
+                'Sign Out',
+                style: TextStyle(
+                  color: Colors.red,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTopBar() {
+    const titles = ['Dashboard', 'Workload', 'Classes', 'Settings'];
+
+    return Container(
+      height: 72,
+      padding: const EdgeInsets.symmetric(horizontal: 32),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        border: Border(
+          bottom: BorderSide(
+            color: const Color(0xFFE2E8F0),
+            width: 1,
+          ),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              titles[_currentIndex],
+              style: const TextStyle(
+                color: Color(0xFF1E293B),
+                fontSize: 24,
+                fontWeight: FontWeight.w700,
+                letterSpacing: -0.5,
+              ),
+            ),
+          ),
+          Row(
+            children: [
+              if (_currentIndex == 2)
+                ElevatedButton.icon(
+                  onPressed: () => _navigateToCreateClassPage(context),
+                  icon: const Icon(Icons.add, size: 18),
+                  label: const Text('Create Class'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF3B82F6),
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 12,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    elevation: 0,
+                  ),
+                ),
+              const SizedBox(width: 16),
+              _buildUserProfile(),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildUserProfile() {
+    return FutureBuilder<DocumentSnapshot>(
+      future: FirebaseFirestore.instance
+          .collection('teachers')
+          .doc(FirebaseAuth.instance.currentUser!.uid)
+          .get(),
+      builder: (context, snapshot) {
+        final teacherName = snapshot.hasData && snapshot.data!.exists
+            ? (snapshot.data!.data() as Map<String, dynamic>)['teacherName'] as String?
+            : 'Teacher';
+        final initials = teacherName?.isNotEmpty == true
+            ? teacherName!.split(' ').map((n) => n[0]).take(2).join().toUpperCase()
+            : 'T';
+
+        return Row(
+          children: [
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    const Color(0xFF3B82F6),
+                    const Color(0xFF60A5FA),
+                  ],
+                ),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Center(
+                child: Text(
+                  initials,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Text(
+              teacherName ?? 'Teacher',
+              style: const TextStyle(
+                color: Color(0xFF475569),
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildMobileLayout() {
     final navAccent = _navAccentColors[_currentIndex];
     final navSurface = const Color(0xFF0F1C3F).withValues(alpha: 0.90);
 
     return Scaffold(
-      appBar: _buildAppBar(),
+      appBar: _buildMobileAppBar(),
       body: BottomBar(
         borderRadius: BorderRadius.circular(AppRadius.full),
         duration: const Duration(seconds: 1),
@@ -257,6 +501,34 @@ class _TeacherHomeState extends State<TeacherHome> {
           ),
         ),
       ),
+    );
+  }
+
+  AppBar _buildMobileAppBar() {
+    const titles = ['Dashboard', 'Workload', 'Classes', 'Settings'];
+
+    return AppBar(
+      backgroundColor: const Color(0xFFF4F8FF),
+      foregroundColor: const Color(0xFF0D1B3D),
+      elevation: 0,
+      scrolledUnderElevation: 0,
+      surfaceTintColor: Colors.transparent,
+      centerTitle: true,
+      title: Text(
+        titles[_currentIndex],
+        style: const TextStyle(color: Color(0xFF0D1B3D)),
+      ),
+      actions: [
+        if (_currentIndex == 2)
+          IconButton(
+            icon: const Icon(Icons.add, color: Color(0xFF2E6BFF)),
+            onPressed: () => _navigateToCreateClassPage(context),
+          ),
+        IconButton(
+          icon: const Icon(Icons.logout),
+          onPressed: () async => await _auth.signOut(),
+        ),
+      ],
     );
   }
 }

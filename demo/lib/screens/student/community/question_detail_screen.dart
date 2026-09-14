@@ -1,4 +1,5 @@
-import 'dart:io';
+import 'dart:io' if (dart.library.html) 'package:demo/services/_file_stub.dart';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:demo/widgets/ui/cc_loading_animation.dart';
 import 'package:demo/services/firestore_service.dart';
@@ -13,6 +14,7 @@ import 'package:demo/widgets/ui/cc_button.dart';
 import 'package:demo/widgets/ui/cc_decorated_background.dart';
 import 'package:demo/widgets/ui/cc_dialog.dart';
 import 'package:demo/widgets/ui/cc_sheet.dart';
+import 'package:demo/widgets/ui/responsive_container.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
@@ -44,6 +46,7 @@ class _QuestionDetailScreenState extends State<QuestionDetailScreen> {
   File? _selectedImage;
   File? _selectedVideo;
   File? _selectedDocument;
+  Uint8List? _selectedBytes;
   String? _uploadedFileName;
 
   @override
@@ -78,17 +81,23 @@ class _QuestionDetailScreenState extends State<QuestionDetailScreen> {
         imageQuality: 85,
       );
       if (image != null) {
+        final bytes = await image.readAsBytes();
         setState(() {
-          _selectedImage = File(image.path);
+          _selectedBytes = bytes;
+          if (image.path.isNotEmpty) {
+            _selectedImage = File(image.path);
+          }
           _selectedVideo = null;
           _selectedDocument = null;
           _uploadedFileName = image.name;
         });
       }
     } catch (e) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Error picking image: $e')));
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error picking image: $e')));
+      }
     }
   }
 
@@ -101,17 +110,23 @@ class _QuestionDetailScreenState extends State<QuestionDetailScreen> {
         imageQuality: 85,
       );
       if (photo != null) {
+        final bytes = await photo.readAsBytes();
         setState(() {
-          _selectedImage = File(photo.path);
+          _selectedBytes = bytes;
+          if (photo.path.isNotEmpty) {
+            _selectedImage = File(photo.path);
+          }
           _selectedVideo = null;
           _selectedDocument = null;
           _uploadedFileName = photo.name;
         });
       }
     } catch (e) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Error capturing photo: $e')));
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error capturing photo: $e')));
+      }
     }
   }
 
@@ -121,17 +136,23 @@ class _QuestionDetailScreenState extends State<QuestionDetailScreen> {
         source: ImageSource.gallery,
       );
       if (video != null) {
+        final bytes = await video.readAsBytes();
         setState(() {
-          _selectedVideo = File(video.path);
+          _selectedBytes = bytes;
+          if (video.path.isNotEmpty) {
+            _selectedVideo = File(video.path);
+          }
           _selectedImage = null;
           _selectedDocument = null;
           _uploadedFileName = video.name;
         });
       }
     } catch (e) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Error picking video: $e')));
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error picking video: $e')));
+      }
     }
   }
 
@@ -140,24 +161,32 @@ class _QuestionDetailScreenState extends State<QuestionDetailScreen> {
       FilePickerResult? result = await FilePicker.platform.pickFiles(
         type: FileType.custom,
         allowedExtensions: ['pdf', 'doc', 'docx', 'txt'],
+        withData: true,
       );
-      if (result != null && result.files.single.path != null) {
+      if (result != null && result.files.isNotEmpty) {
+        final picked = result.files.first;
         setState(() {
-          _selectedDocument = File(result.files.single.path!);
+          _selectedBytes = picked.bytes;
+          if (picked.path != null) {
+            _selectedDocument = File(picked.path!);
+          }
           _selectedImage = null;
           _selectedVideo = null;
-          _uploadedFileName = result.files.single.name;
+          _uploadedFileName = picked.name;
         });
       }
     } catch (e) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Error picking document: $e')));
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error picking document: $e')));
+      }
     }
   }
 
   void _removeAttachment() {
     setState(() {
+      _selectedBytes = null;
       _selectedImage = null;
       _selectedVideo = null;
       _selectedDocument = null;
@@ -170,7 +199,8 @@ class _QuestionDetailScreenState extends State<QuestionDetailScreen> {
     if (_answerController.text.trim().isEmpty &&
         _selectedImage == null &&
         _selectedVideo == null &&
-        _selectedDocument == null) {
+        _selectedDocument == null &&
+        _selectedBytes == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Please enter your answer or attach a file'),
@@ -462,7 +492,9 @@ class _QuestionDetailScreenState extends State<QuestionDetailScreen> {
             ),
           ),
           body: CcDecoratedBackground(
-            child: SingleChildScrollView(
+            child: ResponsiveContainer(
+              maxWidth: 1000,
+              child: SingleChildScrollView(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -837,7 +869,8 @@ class _QuestionDetailScreenState extends State<QuestionDetailScreen> {
               ),
             ),
           ),
-        );
+        ),
+      );
       },
     );
   }

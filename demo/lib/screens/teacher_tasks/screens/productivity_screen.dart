@@ -111,20 +111,20 @@ class ProductivityScreen extends StatelessWidget {
             );
 
             return ListView(
-              padding: const EdgeInsets.fromLTRB(16, 20, 16, 32),
+              padding: const EdgeInsets.fromLTRB(12, 16, 12, 24),
               children: [
                 _heroSection(weekly, monthly),
-                const SizedBox(height: 18),
+                const SizedBox(height: 14),
                 _sectionHeader('Focus snapshot'),
-                const SizedBox(height: 8),
+                const SizedBox(height: 6),
                 _quickStatsRow(weekly),
-                const SizedBox(height: 20),
+                const SizedBox(height: 14),
                 _sectionHeader('Trend cards'),
-                const SizedBox(height: 8),
+                const SizedBox(height: 6),
                 _trendCard('Last 7 days', weekly, Colors.deepPurple),
-                const SizedBox(height: 12),
+                const SizedBox(height: 10),
                 _trendCard('Last 30 days', monthly, Colors.orangeAccent),
-                const SizedBox(height: 20),
+                const SizedBox(height: 14),
                 _insightsList(weekly, monthly),
               ],
             );
@@ -140,19 +140,19 @@ class ProductivityScreen extends StatelessWidget {
     final efficiency = (weekly.efficiency * 100).clamp(0, 200).toDouble();
 
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
           colors: [Color(0xFF8E54E9), Color(0xFF4776E6)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
-        borderRadius: BorderRadius.circular(28),
+        borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.deepPurple.withOpacity(0.25),
-            blurRadius: 30,
-            offset: const Offset(0, 20),
+            color: Colors.deepPurple.withOpacity(0.2),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
           ),
         ],
       ),
@@ -163,28 +163,28 @@ class ProductivityScreen extends StatelessWidget {
             'Momentum check',
             style: TextStyle(
               color: Colors.white,
-              fontSize: 18,
+              fontSize: 15,
               fontWeight: FontWeight.bold,
             ),
           ),
-          const SizedBox(height: 6),
+          const SizedBox(height: 4),
           Text(
-            '${weekly.totalTasks} tasks completed in the last week',
-            style: const TextStyle(color: Colors.white70),
+            '${weekly.totalTasks} tasks completed',
+            style: const TextStyle(color: Colors.white70, fontSize: 12),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 12),
           _heroStat('Completion', completion, Icons.task_alt),
-          const SizedBox(height: 10),
+          const SizedBox(height: 8),
           _heroStat('On time', onTime, Icons.schedule_rounded),
-          const SizedBox(height: 10),
+          const SizedBox(height: 8),
           _heroStat('Efficiency', efficiency, Icons.flash_on),
-          const SizedBox(height: 18),
+          const SizedBox(height: 12),
           Wrap(
-            spacing: 10,
-            runSpacing: 8,
+            spacing: 6,
+            runSpacing: 6,
             children: [
               _pill('${weekly.onTimeCompleted} on-time', Icons.timelapse),
-              _pill('${monthly.totalTasks} tasks in 30d', Icons.calendar_today),
+              _pill('${monthly.totalTasks} in 30d', Icons.calendar_today),
             ],
           ),
         ],
@@ -197,11 +197,11 @@ class ProductivityScreen extends StatelessWidget {
     return Row(
       children: [
         CircleAvatar(
-          radius: 18,
-          backgroundColor: Color(0xFF2E6BFF).withOpacity(0.1),
-          child: Icon(icon, color: Color(0xFF2E6BFF)),
+          radius: 14,
+          backgroundColor: Color(0xFF2E6BFF).withValues(alpha: 0.1),
+          child: Icon(icon, color: Color(0xFF2E6BFF), size: 16),
         ),
-        const SizedBox(width: 12),
+        const SizedBox(width: 8),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -209,12 +209,13 @@ class ProductivityScreen extends StatelessWidget {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(label, style: const TextStyle(color: Color(0xFF5C6B8C))),
+                  Text(label, style: const TextStyle(color: Color(0xFF5C6B8C), fontSize: 12)),
                   Text(
                     '${value.toStringAsFixed(0)}%',
                     style: const TextStyle(
                       color: Color(0xFF0D1B3D),
                       fontWeight: FontWeight.w600,
+                      fontSize: 13,
                     ),
                   ),
                 ],
@@ -224,8 +225,8 @@ class ProductivityScreen extends StatelessWidget {
                 borderRadius: BorderRadius.circular(999),
                 child: LinearProgressIndicator(
                   value: normalized,
-                  minHeight: 6,
-                  backgroundColor: Color(0xFF8DA6D8).withOpacity(0.2),
+                  minHeight: 4,
+                  backgroundColor: Color(0xFF8DA6D8).withValues(alpha: 0.2),
                   valueColor: const AlwaysStoppedAnimation(Color(0xFF2E6BFF)),
                 ),
               ),
@@ -238,7 +239,7 @@ class ProductivityScreen extends StatelessWidget {
 
   Widget _pill(String label, IconData icon) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
         color: Color(0xFFF0F4FF),
         borderRadius: BorderRadius.circular(999),
@@ -246,9 +247,9 @@ class ProductivityScreen extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, color: Color(0xFF2E6BFF), size: 16),
-          const SizedBox(width: 6),
-          Text(label, style: const TextStyle(color: Color(0xFF0D1B3D))),
+          Icon(icon, color: Color(0xFF2E6BFF), size: 12),
+          const SizedBox(width: 4),
+          Text(label, style: const TextStyle(color: Color(0xFF0D1B3D), fontSize: 11)),
         ],
       ),
     );
@@ -257,7 +258,7 @@ class ProductivityScreen extends StatelessWidget {
   Widget _sectionHeader(String title) {
     return Text(
       title,
-      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+      style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
     );
   }
 
@@ -297,15 +298,15 @@ class ProductivityScreen extends StatelessWidget {
 
   Widget _miniStat(String label, String value, Color color) {
     return Container(
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 20,
-            offset: const Offset(0, 10),
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
           ),
         ],
       ),
@@ -315,13 +316,13 @@ class ProductivityScreen extends StatelessWidget {
           Text(
             value,
             style: TextStyle(
-              fontSize: 20,
+              fontSize: 16,
               fontWeight: FontWeight.bold,
               color: color,
             ),
           ),
-          const SizedBox(height: 4),
-          Text(label, style: const TextStyle(color: Colors.black54)),
+          const SizedBox(height: 2),
+          Text(label, style: const TextStyle(color: Colors.black54, fontSize: 11)),
         ],
       ),
     );
@@ -329,15 +330,15 @@ class ProductivityScreen extends StatelessWidget {
 
   Widget _trendCard(String label, ProductivityMetrics metrics, Color accent) {
     return Container(
-      padding: const EdgeInsets.all(18),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(22),
+        borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 24,
-            offset: const Offset(0, 16),
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 16,
+            offset: const Offset(0, 8),
           ),
         ],
       ),
@@ -350,36 +351,36 @@ class ProductivityScreen extends StatelessWidget {
               Text(
                 label,
                 style: const TextStyle(
-                  fontSize: 16,
+                  fontSize: 14,
                   fontWeight: FontWeight.w600,
                 ),
               ),
               Container(
                 padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 4,
+                  horizontal: 8,
+                  vertical: 3,
                 ),
                 decoration: BoxDecoration(
-                  color: accent.withOpacity(0.1),
+                  color: accent.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(999),
                 ),
                 child: Text(
                   '${metrics.totalTasks} tasks',
-                  style: TextStyle(color: accent, fontWeight: FontWeight.w600),
+                  style: TextStyle(color: accent, fontWeight: FontWeight.w600, fontSize: 11),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 10),
           _metricRow('Completion', metrics.completionRate, accent),
-          const SizedBox(height: 10),
+          const SizedBox(height: 6),
           _metricRow('On-time', metrics.onTimeRate, Colors.teal),
-          const SizedBox(height: 10),
+          const SizedBox(height: 6),
           _metricRow('Efficiency', metrics.efficiency, Colors.orange),
-          const SizedBox(height: 12),
+          const SizedBox(height: 8),
           Text(
-            '${metrics.onTimeCompleted} on-time · ${(metrics.efficiency * 100).toStringAsFixed(0)}% effort efficiency',
-            style: const TextStyle(color: Colors.black54, fontSize: 13),
+            '${metrics.onTimeCompleted} on-time · ${(metrics.efficiency * 100).toStringAsFixed(0)}% efficiency',
+            style: const TextStyle(color: Colors.black54, fontSize: 11),
           ),
         ],
       ),
@@ -394,15 +395,15 @@ class ProductivityScreen extends StatelessWidget {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(label, style: const TextStyle(fontWeight: FontWeight.w500)),
-            Text('$pct%', style: TextStyle(color: color)),
+            Text(label, style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 12)),
+            Text('$pct%', style: TextStyle(color: color, fontSize: 12)),
           ],
         ),
-        const SizedBox(height: 6),
+        const SizedBox(height: 4),
         ClipRRect(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(8),
           child: LinearProgressIndicator(
-            minHeight: 8,
+            minHeight: 5,
             value: (ratio).clamp(0, 1.5),
             backgroundColor: Colors.grey.shade200,
             valueColor: AlwaysStoppedAnimation(color),
@@ -458,35 +459,35 @@ class ProductivityScreen extends StatelessWidget {
     required Color color,
   }) {
     return Container(
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(14),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 20,
-            offset: const Offset(0, 12),
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 12,
+            offset: const Offset(0, 6),
           ),
         ],
       ),
       child: Row(
         children: [
           CircleAvatar(
-            backgroundColor: color.withOpacity(0.15),
-            child: Icon(icon, color: color),
+            backgroundColor: color.withValues(alpha: 0.15),
+            child: Icon(icon, color: color, size: 16),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 10),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   title,
-                  style: const TextStyle(fontWeight: FontWeight.w600),
+                  style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
                 ),
-                const SizedBox(height: 4),
-                Text(subtitle, style: const TextStyle(color: Colors.black54)),
+                const SizedBox(height: 2),
+                Text(subtitle, style: const TextStyle(color: Colors.black54, fontSize: 11)),
               ],
             ),
           ),

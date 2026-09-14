@@ -1,11 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:demo/widgets/ui/cc_loading_animation.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:demo/theme/app_colors.dart';
+import 'package:demo/theme/app_spacing.dart';
+import 'package:demo/widgets/ui/cc_button.dart';
+import 'package:demo/widgets/ui/cc_card.dart';
+import 'package:demo/widgets/cc_breadcrumb_bar.dart';
 import 'concept_validation_screen.dart';
 import 'concept_video_validation_screen.dart';
 
 class StudentPracticeQuizAttemptScreen extends StatefulWidget {
   final String classId;
+  final String? className;
   final String quizId; // 🔥 CHAPTER QUIZ ID (IMPORTANT)
   final String studentId;
   final String studentName;
@@ -15,6 +21,7 @@ class StudentPracticeQuizAttemptScreen extends StatefulWidget {
   const StudentPracticeQuizAttemptScreen({
     super.key,
     required this.classId,
+    this.className,
     required this.quizId,
     required this.studentId,
     required this.studentName,
@@ -84,144 +91,219 @@ class _StudentPracticeQuizAttemptScreenState
   /// ============================================================
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final currentClassName = widget.className ?? 'Class';
+
     return Scaffold(
-      appBar: AppBar(title: Text("Practice: ${widget.conceptName}")),
-      body: StreamBuilder<QuerySnapshot>(
-        stream: questionRef.orderBy('order').snapshots(),
-        builder: (context, snapshot) {
-          if (!snapshot.hasData) {
-            return const Center(child: CcLoadingAnimation());
-          }
+      backgroundColor: AppColors.background,
+      body: SafeArea(
+        child: Column(
+          children: [
+            CCBreadcrumbBar(
+              items: [
+                BreadcrumbItem(
+                  label: 'Classes',
+                  onTap: () {
+                    Navigator.of(context).popUntil((route) => route.isFirst);
+                  },
+                ),
+                BreadcrumbItem(
+                  label: currentClassName,
+                  onTap: () {
+                    Navigator.of(context).pop();
+                  },
+                ),
+                BreadcrumbItem(
+                  label: 'Quizzes',
+                  onTap: () {
+                    Navigator.of(context).pop();
+                  },
+                ),
+                BreadcrumbItem(label: 'Practice: ${widget.conceptName}'),
+              ],
+            ),
+            Expanded(
+              child: StreamBuilder<QuerySnapshot>(
+                stream: questionRef.orderBy('order').snapshots(),
+                builder: (context, snapshot) {
+                  if (!snapshot.hasData) {
+                    return const Center(child: CcLoadingAnimation());
+                  }
 
-          final questions = snapshot.data!.docs;
+                  final questions = snapshot.data!.docs;
 
-          if (submitted) {
-            final passed = score >= (questions.length / 2);
+                  if (submitted) {
+                    final passed = score >= (questions.length / 2);
 
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    "Score: $score / ${questions.length}",
-                    style: const TextStyle(
-                      fontSize: 26,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-
-                  if (!passed) ...[
-                    const Text(
-                      "You need more practice.\nPlease try again.",
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 20),
-                    ElevatedButton(
-                      onPressed: () {
-                        setState(() {
-                          submitted = false;
-                          answers.clear();
-                        });
-                      },
-                      child: const Text("Retry Quiz"),
-                    ),
-                  ] else ...[
-                    const Text(
-                      "Good job! 🎉\nChoose how you want to validate this concept.",
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 20),
-
-                    /// ✍️ TEXT VALIDATION
-                    ElevatedButton.icon(
-                      icon: const Icon(Icons.edit),
-                      label: const Text("Text Validation (100 words)"),
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => ConceptValidationScreen(
-                              classId: widget.classId,
-                              quizId: widget.quizId,
-                              studentId: widget.studentId,
-                              conceptName: widget.conceptName,
-                              practiceScore: score,
+                    return Center(
+                      child: ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 550),
+                        child: Padding(
+                          padding: const EdgeInsets.all(AppSpacing.lg),
+                          child: CcCard(
+                            padding: const EdgeInsets.all(AppSpacing.xl),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  "Score: $score / ${questions.length}",
+                                  style: theme.textTheme.headlineMedium?.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                    color: AppColors.textPrimary,
+                                  ),
+                                ),
+                                const SizedBox(height: AppSpacing.md),
+                                if (!passed) ...[
+                                  Text(
+                                    "You need more practice.\nPlease try again.",
+                                    textAlign: TextAlign.center,
+                                    style: theme.textTheme.bodyMedium?.copyWith(
+                                      color: AppColors.textMuted,
+                                    ),
+                                  ),
+                                  const SizedBox(height: AppSpacing.lg),
+                                  CcButton(
+                                    label: "Retry Quiz",
+                                    icon: const Icon(Icons.refresh_rounded, color: Colors.white),
+                                    onPressed: () {
+                                      setState(() {
+                                        submitted = false;
+                                        answers.clear();
+                                      });
+                                    },
+                                  ),
+                                ] else ...[
+                                  Text(
+                                    "Good job! 🎉\nChoose how you want to validate this concept.",
+                                    textAlign: TextAlign.center,
+                                    style: theme.textTheme.bodyMedium?.copyWith(
+                                      color: AppColors.textPrimary,
+                                    ),
+                                  ),
+                                  const SizedBox(height: AppSpacing.xl),
+                                  CcButton(
+                                    label: "Text Validation (100 words)",
+                                    icon: const Icon(Icons.edit_rounded, color: Colors.white),
+                                    onPressed: () {
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (_) => ConceptValidationScreen(
+                                            classId: widget.classId,
+                                            className: widget.className,
+                                            quizId: widget.quizId,
+                                            studentId: widget.studentId,
+                                            conceptName: widget.conceptName,
+                                            practiceScore: score,
+                                          ),
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                  const SizedBox(height: AppSpacing.md),
+                                  CcButton(
+                                    label: "Video Validation (1 min)",
+                                    icon: const Icon(Icons.videocam_rounded, color: Colors.white),
+                                    variant: CcButtonVariant.secondary,
+                                    onPressed: () {
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (_) => ConceptVideoValidationScreen(
+                                            classId: widget.classId,
+                                            className: widget.className,
+                                            quizId: widget.quizId,
+                                            studentId: widget.studentId,
+                                            studentName: widget.studentName,
+                                            conceptName: widget.conceptName,
+                                            practiceScore: score,
+                                          ),
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                ],
+                              ],
                             ),
                           ),
-                        );
-                      },
-                    ),
-
-                    const SizedBox(height: 12),
-
-                    /// 🎥 VIDEO VALIDATION
-                    ElevatedButton.icon(
-                      icon: const Icon(Icons.videocam),
-                      label: const Text("Video Validation (1 min)"),
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => ConceptVideoValidationScreen(
-                              classId: widget.classId,
-                              quizId: widget.quizId,
-                              studentId: widget.studentId,
-                              studentName: widget.studentName,
-                              conceptName: widget.conceptName,
-                              practiceScore: score,
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-                  ],
-                ],
-              ),
-            );
-          }
-
-          /// 🔹 QUESTIONS LIST
-          return ListView(
-            padding: const EdgeInsets.all(16),
-            children: [
-              ...questions.map((q) {
-                final data = q.data() as Map<String, dynamic>;
-                return Card(
-                  margin: const EdgeInsets.only(bottom: 16),
-                  child: Padding(
-                    padding: const EdgeInsets.all(12),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          data['question'],
-                          style: const TextStyle(fontWeight: FontWeight.bold),
                         ),
-                        const SizedBox(height: 8),
-                        ...List<String>.from(data['options']).map(
-                          (opt) => RadioListTile<String>(
-                            value: opt,
-                            groupValue: answers[q.id],
-                            title: Text(opt),
-                            onChanged: (v) {
-                              setState(() => answers[q.id] = v!);
-                            },
+                      ),
+                    );
+                  }
+
+                  return Center(
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 850),
+                      child: ListView(
+                        padding: const EdgeInsets.all(AppSpacing.lg),
+                        children: [
+                          ...questions.map((q) {
+                            final data = q.data() as Map<String, dynamic>;
+                            return Padding(
+                              padding: const EdgeInsets.only(bottom: AppSpacing.md),
+                              child: CcCard(
+                                padding: const EdgeInsets.all(AppSpacing.lg),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      data['question'],
+                                      style: theme.textTheme.titleMedium?.copyWith(
+                                        fontWeight: FontWeight.bold,
+                                        color: AppColors.textPrimary,
+                                      ),
+                                    ),
+                                    const SizedBox(height: AppSpacing.md),
+                                    ...List<String>.from(data['options']).map(
+                                      (opt) => Container(
+                                        margin: const EdgeInsets.only(bottom: 8),
+                                        decoration: BoxDecoration(
+                                          color: answers[q.id] == opt
+                                              ? AppColors.primary.withValues(alpha: 0.12)
+                                              : AppColors.surfaceAlt,
+                                          borderRadius: BorderRadius.circular(8),
+                                          border: Border.all(
+                                            color: answers[q.id] == opt
+                                                ? AppColors.primary
+                                                : AppColors.primary.withValues(alpha: 0.18),
+                                          ),
+                                        ),
+                                        child: RadioListTile<String>(
+                                          value: opt,
+                                          groupValue: answers[q.id],
+                                          title: Text(
+                                            opt,
+                                            style: theme.textTheme.bodyLarge?.copyWith(
+                                              color: AppColors.textPrimary,
+                                            ),
+                                          ),
+                                          activeColor: AppColors.primary,
+                                          onChanged: (v) {
+                                            setState(() => answers[q.id] = v!);
+                                          },
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            );
+                          }),
+                          const SizedBox(height: AppSpacing.md),
+                          CcButton(
+                            label: "Submit Practice Quiz",
+                            icon: const Icon(Icons.check_circle_rounded, color: Colors.white),
+                            onPressed: () => submitPracticeQuiz(questions),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
-                  ),
-                );
-              }),
-              ElevatedButton(
-                onPressed: () => submitPracticeQuiz(questions),
-                child: const Text("Submit Practice Quiz"),
+                  );
+                },
               ),
-            ],
-          );
-        },
+            ),
+          ],
+        ),
       ),
     );
   }

@@ -5,12 +5,14 @@ import 'package:demo/theme/app_spacing.dart';
 import 'package:demo/widgets/ui/cc_button.dart';
 import 'package:demo/widgets/ui/cc_card.dart';
 import 'package:demo/widgets/ui/cc_section_header.dart';
+import 'package:demo/widgets/cc_breadcrumb_bar.dart';
 import 'student_class_detail_screen.dart';
 import '../../services/global_xp_service.dart';
 import '../../services/class_xp_service.dart';
 
 class StudentQuizAttemptScreen extends StatefulWidget {
   final String classId;
+  final String? className;
   final String quizId; // chapterId
   final String studentId;
   final String studentName;
@@ -18,6 +20,7 @@ class StudentQuizAttemptScreen extends StatefulWidget {
   const StudentQuizAttemptScreen({
     super.key,
     required this.classId,
+    this.className,
     required this.quizId,
     required this.studentId,
     required this.studentName,
@@ -210,6 +213,7 @@ class _StudentQuizAttemptScreenState extends State<StudentQuizAttemptScreen> {
                 MaterialPageRoute(
                   builder: (_) => StudentClassDetailScreen(
                     classId: widget.classId,
+                    className: widget.className,
                     initialTabIndex: 2, // Homework tab index
                   ),
                 ),
@@ -232,150 +236,182 @@ class _StudentQuizAttemptScreenState extends State<StudentQuizAttemptScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final currentClassName = widget.className ?? 'Class';
+
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: AppBar(
-        backgroundColor: AppColors.background,
-        foregroundColor: AppColors.textPrimary,
-        elevation: 0,
-        title: const Text('Chapter Quiz'),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded),
-          onPressed: () => Navigator.pop(context),
-        ),
-      ),
-      body: StreamBuilder<QuerySnapshot>(
-        stream: questionRef.orderBy('order').snapshots(),
-        builder: (context, snapshot) {
-          if (!snapshot.hasData) {
-            return const Center(
-              child: CircularProgressIndicator(color: AppColors.primary),
-            );
-          }
+      body: SafeArea(
+        child: Column(
+          children: [
+            CCBreadcrumbBar(
+              items: [
+                BreadcrumbItem(
+                  label: 'Classes',
+                  onTap: () {
+                    Navigator.of(context).popUntil((route) => route.isFirst);
+                  },
+                ),
+                BreadcrumbItem(
+                  label: currentClassName,
+                  onTap: () {
+                    Navigator.of(context).pop();
+                  },
+                ),
+                BreadcrumbItem(
+                  label: 'Quizzes',
+                  onTap: () {
+                    Navigator.of(context).pop();
+                  },
+                ),
+                const BreadcrumbItem(label: 'Chapter Quiz'),
+              ],
+            ),
+            Expanded(
+              child: StreamBuilder<QuerySnapshot>(
+                stream: questionRef.orderBy('order').snapshots(),
+                builder: (context, snapshot) {
+                  if (!snapshot.hasData) {
+                    return const Center(
+                      child: CircularProgressIndicator(color: AppColors.primary),
+                    );
+                  }
 
-          final questions = snapshot.data!.docs;
+                  final questions = snapshot.data!.docs;
 
-          if (submitted) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  CcCard(
-                    child: Container(
-                      width: 280,
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: AppColors.primary.withValues(alpha: 0.08),
-                        borderRadius: BorderRadius.circular(14),
-                        border: Border.all(
-                          color: AppColors.primary.withValues(alpha: 0.25),
+                  if (submitted) {
+                    return Center(
+                      child: ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 500),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            CcCard(
+                              child: Container(
+                                width: double.infinity,
+                                padding: const EdgeInsets.all(AppSpacing.md),
+                                decoration: BoxDecoration(
+                                  color: AppColors.primary.withValues(alpha: 0.08),
+                                  borderRadius: BorderRadius.circular(14),
+                                  border: Border.all(
+                                    color: AppColors.primary.withValues(alpha: 0.25),
+                                  ),
+                                ),
+                                child: Column(
+                                  children: [
+                                    Text(
+                                      'Score: $score / ${questions.length}',
+                                      style: theme.textTheme.headlineMedium?.copyWith(
+                                        color: AppColors.textPrimary,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Text(
+                                      '${((score / questions.length) * 100).toStringAsFixed(1)}%',
+                                      style: theme.textTheme.titleMedium?.copyWith(
+                                        color: AppColors.textMuted,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: AppSpacing.xl),
+                            CcButton(
+                              label: 'Continue',
+                              icon: const Icon(
+                                Icons.arrow_forward_rounded,
+                                color: Colors.white,
+                              ),
+                              onPressed: () => showWeakConceptPopup(context),
+                            ),
+                          ],
                         ),
                       ),
-                      child: Column(
+                    );
+                  }
+
+                  return Center(
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 850),
+                      child: ListView(
+                        padding: const EdgeInsets.all(AppSpacing.lg),
                         children: [
-                          Text(
-                            'Score: $score / ${questions.length}',
-                            style: theme.textTheme.headlineMedium?.copyWith(
-                              color: AppColors.textPrimary,
-                            ),
+                          const CcSectionHeader(
+                            title: 'Answer All Questions',
+                            subtitle:
+                                'Pick one option for each question before submitting.',
                           ),
-                          const SizedBox(height: 8),
-                          Text(
-                            '${((score / questions.length) * 100).toStringAsFixed(1)}%',
-                            style: theme.textTheme.titleMedium?.copyWith(
-                              color: AppColors.textMuted,
+                          const SizedBox(height: AppSpacing.lg),
+                          ...questions.map((q) {
+                            final data = q.data() as Map<String, dynamic>;
+                            return CcCard(
+                              padding: const EdgeInsets.all(AppSpacing.lg),
+                              child: Padding(
+                                padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      data['question'],
+                                      style: theme.textTheme.titleMedium?.copyWith(
+                                        color: AppColors.textPrimary,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 16),
+                                    ...List<String>.from(data['options']).map(
+                                      (opt) => Container(
+                                        margin: const EdgeInsets.only(bottom: 8),
+                                        decoration: BoxDecoration(
+                                          color: answers[q.id] == opt
+                                              ? AppColors.primary.withValues(alpha: 0.12)
+                                              : AppColors.surfaceAlt,
+                                          borderRadius: BorderRadius.circular(8),
+                                          border: Border.all(
+                                            color: answers[q.id] == opt
+                                                ? AppColors.primary
+                                                : AppColors.primary.withValues(alpha: 0.18),
+                                          ),
+                                        ),
+                                        child: RadioListTile<String>(
+                                          value: opt,
+                                          groupValue: answers[q.id],
+                                          title: Text(
+                                            opt,
+                                            style: theme.textTheme.bodyLarge?.copyWith(
+                                              color: AppColors.textPrimary,
+                                            ),
+                                          ),
+                                          activeColor: AppColors.primary,
+                                          onChanged: (v) {
+                                            setState(() => answers[q.id] = v!);
+                                          },
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            );
+                          }),
+                          const SizedBox(height: 16),
+                          CcButton(
+                            label: 'Submit Quiz',
+                            icon: const Icon(
+                              Icons.check_circle_rounded,
+                              color: Colors.white,
                             ),
+                            onPressed: () => submitQuiz(questions),
                           ),
                         ],
                       ),
                     ),
-                  ),
-                  const SizedBox(height: AppSpacing.xl),
-                  CcButton(
-                    label: 'Continue',
-                    icon: const Icon(
-                      Icons.arrow_forward_rounded,
-                      color: Colors.white,
-                    ),
-                    onPressed: () => showWeakConceptPopup(context),
-                  ),
-                ],
+                  );
+                },
               ),
-            );
-          }
-
-          return ListView(
-            padding: const EdgeInsets.all(AppSpacing.lg),
-            children: [
-              const CcSectionHeader(
-                title: 'Answer All Questions',
-                subtitle:
-                    'Pick one option for each question before submitting.',
-              ),
-              const SizedBox(height: AppSpacing.lg),
-              ...questions.map((q) {
-                final data = q.data() as Map<String, dynamic>;
-                return CcCard(
-                  padding: const EdgeInsets.all(AppSpacing.lg),
-                  child: Padding(
-                    padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          data['question'],
-                          style: theme.textTheme.titleMedium?.copyWith(
-                            color: AppColors.textPrimary,
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                        ...List<String>.from(data['options']).map(
-                          (opt) => Container(
-                            margin: const EdgeInsets.only(bottom: 8),
-                            decoration: BoxDecoration(
-                              color: answers[q.id] == opt
-                                  ? AppColors.primary.withValues(alpha: 0.12)
-                                  : AppColors.surfaceAlt,
-                              borderRadius: BorderRadius.circular(8),
-                              border: Border.all(
-                                color: answers[q.id] == opt
-                                    ? AppColors.primary
-                                    : AppColors.primary.withValues(alpha: 0.18),
-                              ),
-                            ),
-                            child: RadioListTile<String>(
-                              value: opt,
-                              groupValue: answers[q.id],
-                              title: Text(
-                                opt,
-                                style: theme.textTheme.bodyLarge?.copyWith(
-                                  color: AppColors.textPrimary,
-                                ),
-                              ),
-                              activeColor: AppColors.primary,
-                              onChanged: (v) {
-                                setState(() => answers[q.id] = v!);
-                              },
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                );
-              }),
-              const SizedBox(height: 16),
-              CcButton(
-                label: 'Submit Quiz',
-                icon: const Icon(
-                  Icons.check_circle_rounded,
-                  color: Colors.white,
-                ),
-                onPressed: () => submitQuiz(questions),
-              ),
-            ],
-          );
-        },
+            ),
+          ],
+        ),
       ),
     );
   }

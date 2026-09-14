@@ -1,10 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:demo/widgets/ui/cc_loading_animation.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:demo/theme/app_colors.dart';
+import 'package:demo/theme/app_spacing.dart';
+import 'package:demo/widgets/ui/cc_button.dart';
+import 'package:demo/widgets/ui/cc_card.dart';
+import 'package:demo/widgets/cc_breadcrumb_bar.dart';
 import '../../../services/gemini_text_validation_service.dart';
 
 class ConceptValidationScreen extends StatefulWidget {
   final String classId;
+  final String? className;
   final String quizId;
   final String studentId;
   final String conceptName;
@@ -13,6 +19,7 @@ class ConceptValidationScreen extends StatefulWidget {
   const ConceptValidationScreen({
     super.key,
     required this.classId,
+    this.className,
     required this.quizId,
     required this.studentId,
     required this.conceptName,
@@ -188,66 +195,127 @@ class _ConceptValidationScreenState extends State<ConceptValidationScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: Text("Validate: ${widget.conceptName}")),
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              "Explain this concept in your own words (minimum 100 words):",
-              style: TextStyle(fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 12),
+    final theme = Theme.of(context);
+    final currentClassName = widget.className ?? 'Class';
 
-            SizedBox(
-              height: 220,
-              child: TextField(
-                controller: _controller,
-                maxLines: null,
-                keyboardType: TextInputType.multiline,
-                onChanged: (value) {
-                  wordCountNotifier.value = calculateWordCount(value);
-                },
-                decoration: InputDecoration(
-                  hintText:
-                      "Start explaining here...\n\nExample: Breadth First Search works by...",
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
+    return Scaffold(
+      backgroundColor: AppColors.background,
+      body: SafeArea(
+        child: Column(
+          children: [
+            CCBreadcrumbBar(
+              items: [
+                BreadcrumbItem(
+                  label: 'Classes',
+                  onTap: () {
+                    Navigator.of(context).popUntil((route) => route.isFirst);
+                  },
+                ),
+                BreadcrumbItem(
+                  label: currentClassName,
+                  onTap: () {
+                    Navigator.of(context).pop();
+                  },
+                ),
+                BreadcrumbItem(
+                  label: 'Quizzes',
+                  onTap: () {
+                    Navigator.of(context).pop();
+                  },
+                ),
+                BreadcrumbItem(label: 'Validate: ${widget.conceptName}'),
+              ],
+            ),
+            Expanded(
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 850),
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.all(AppSpacing.lg),
+                    child: CcCard(
+                      padding: const EdgeInsets.all(AppSpacing.xl),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            "Explain this concept in your own words (minimum 100 words):",
+                            style: theme.textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.textPrimary,
+                            ),
+                          ),
+                          const SizedBox(height: AppSpacing.md),
+                          SizedBox(
+                            height: 220,
+                            child: TextField(
+                              controller: _controller,
+                              maxLines: null,
+                              keyboardType: TextInputType.multiline,
+                              onChanged: (value) {
+                                wordCountNotifier.value = calculateWordCount(value);
+                              },
+                              style: const TextStyle(color: AppColors.textPrimary),
+                              decoration: InputDecoration(
+                                filled: true,
+                                fillColor: AppColors.surfaceAlt,
+                                hintText:
+                                    "Start explaining here...\n\nExample: Breadth First Search works by...",
+                                hintStyle: const TextStyle(color: AppColors.textMuted),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: BorderSide(
+                                    color: AppColors.primary.withValues(alpha: 0.18),
+                                  ),
+                                ),
+                                enabledBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: BorderSide(
+                                    color: AppColors.primary.withValues(alpha: 0.18),
+                                  ),
+                                ),
+                                focusedBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: const BorderSide(
+                                    color: AppColors.primary,
+                                    width: 2,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: AppSpacing.sm),
+                          ValueListenableBuilder<int>(
+                            valueListenable: wordCountNotifier,
+                            builder: (_, count, __) {
+                              return Text(
+                                "Word count: $count / 100",
+                                style: TextStyle(
+                                  color: count < 100 ? AppColors.error : AppColors.success,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              );
+                            },
+                          ),
+                          const SizedBox(height: AppSpacing.lg),
+                          SizedBox(
+                            width: double.infinity,
+                            child: CcButton(
+                              label: submitting ? "Validating..." : "Submit Validation",
+                              icon: submitting
+                                  ? const SizedBox(
+                                      height: 18,
+                                      width: 18,
+                                      child: CcLoadingAnimation(strokeWidth: 2),
+                                    )
+                                  : const Icon(Icons.check_circle_rounded, color: Colors.white),
+                              onPressed: submitting ? null : submitValidation,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                   ),
                 ),
-              ),
-            ),
-
-            const SizedBox(height: 8),
-
-            ValueListenableBuilder<int>(
-              valueListenable: wordCountNotifier,
-              builder: (_, count, __) {
-                return Text(
-                  "Word count: $count / 100",
-                  style: TextStyle(
-                    color: count < 100 ? Colors.red : Colors.green,
-                    fontWeight: FontWeight.bold,
-                  ),
-                );
-              },
-            ),
-
-            const SizedBox(height: 12),
-
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: submitting ? null : submitValidation,
-                child: submitting
-                    ? const SizedBox(
-                        height: 20,
-                        width: 20,
-                        child: CcLoadingAnimation(strokeWidth: 2),
-                      )
-                    : const Text("Submit Validation"),
               ),
             ),
           ],

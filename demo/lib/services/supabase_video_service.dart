@@ -1,4 +1,5 @@
-import 'dart:io';
+import 'dart:io' if (dart.library.html) 'package:demo/services/_file_stub.dart';
+import 'dart:typed_data';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class SupabaseVideoService {
@@ -6,23 +7,36 @@ class SupabaseVideoService {
 
   /// 🔹 Uploads video to Supabase Storage
   static Future<String> uploadVideoToSupabase({
-    required File videoFile,
+    File? videoFile,
+    Uint8List? videoBytes,
     required String studentId,
     required String conceptName,
   }) async {
     final String filePath =
         'concept_videos/$studentId/${DateTime.now().millisecondsSinceEpoch}_$conceptName.mp4';
 
-    await _client.storage
-        .from('concept_videos') // 👈 BUCKET NAME
-        .upload(
-      filePath,
-      videoFile,
-      fileOptions: const FileOptions(
-        upsert: true,
-        contentType: 'video/mp4',
-      ),
-    );
+    if (videoBytes != null && videoBytes.isNotEmpty) {
+      await _client.storage.from('concept_videos').uploadBinary(
+        filePath,
+        videoBytes,
+        fileOptions: const FileOptions(
+          upsert: true,
+          contentType: 'video/mp4',
+        ),
+      );
+    } else if (videoFile != null) {
+      final bytes = await videoFile.readAsBytes();
+      if (bytes.isNotEmpty) {
+        await _client.storage.from('concept_videos').uploadBinary(
+          filePath,
+          bytes,
+          fileOptions: const FileOptions(
+            upsert: true,
+            contentType: 'video/mp4',
+          ),
+        );
+      }
+    }
 
     /// 🔹 Get public URL
     final publicUrl = _client.storage

@@ -1,0 +1,11 @@
+{
+  "timestamp": "2026-07-12T19:15:00.008Z",
+  "projectRoot": "c:\\Users\\samya\\Documents\\Projects\\ClassConnect\\demo",
+  "structure": {
+    "hasPackageJson": false,
+    "hasTsConfig": false,
+    "hasClaudeConfig": true,
+    "hasClaudeFlow": true
+  },
+  "scannedAt": 1783883700008
+}

@@ -7,12 +7,14 @@ class GeneratePblScreen extends StatefulWidget {
   final List<String> concepts;
   final Map<String, String> selectedScenario;
   final String? classId;
+  final String? className;
 
   const GeneratePblScreen({
     super.key,
     required this.concepts,
     required this.selectedScenario,
     this.classId,
+    this.className,
   });
 
   @override
@@ -37,7 +39,11 @@ class _GeneratePblScreenState extends State<GeneratePblScreen> {
         context,
         MaterialPageRoute(
           builder: (_) =>
-              PblEditorScreen(project: project, classId: widget.classId),
+              PblEditorScreen(
+                project: project,
+                classId: widget.classId,
+                className: widget.className,
+              ),
         ),
       );
     }

@@ -1,4 +1,4 @@
-import 'dart:ui';
+import 'dart:ui' show ImageFilter;
 
 import 'package:demo/screens/parent_details_screen.dart';
 import 'package:demo/screens/student_home.dart';
@@ -82,6 +82,36 @@ class _RegisterScreenState extends State<RegisterScreen> {
           SafeArea(
             child: LayoutBuilder(
               builder: (context, constraints) {
+                final isDesktop = constraints.maxWidth >= 840;
+
+                if (isDesktop) {
+                  return Center(
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 40,
+                        vertical: 24,
+                      ),
+                      child: ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 1100),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            Expanded(
+                              flex: 6,
+                              child: _buildDesktopHeroShowcase(),
+                            ),
+                            const SizedBox(width: 48),
+                            Expanded(
+                              flex: 5,
+                              child: _buildRegisterCard(),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  );
+                }
+
                 return SingleChildScrollView(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 16,
@@ -107,6 +137,170 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   ),
                 );
               },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDesktopHeroShowcase() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.14),
+            borderRadius: BorderRadius.circular(30),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.25)),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 28,
+                height: 28,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(4),
+                  child: Image.asset(
+                    'assets/icons/logo.png',
+                    fit: BoxFit.contain,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 10),
+              const Text(
+                'ClassConnect',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 14,
+                  letterSpacing: 0.4,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 8,
+                  vertical: 2,
+                ),
+                decoration: BoxDecoration(
+                  color: _accent.withValues(alpha: 0.8),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Text(
+                  'Get Started',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 24),
+        const Text(
+          'Join the Next Generation of Collaborative Learning.',
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 34,
+            fontWeight: FontWeight.w900,
+            letterSpacing: -0.8,
+            height: 1.25,
+          ),
+        ),
+        const SizedBox(height: 14),
+        Text(
+          'Create your account to start managing classes, submitting innovative project milestones, and connecting with peers and professors in real time.',
+          style: TextStyle(
+            color: Colors.white.withValues(alpha: 0.82),
+            fontSize: 15,
+            height: 1.5,
+          ),
+        ),
+        const SizedBox(height: 28),
+        _buildHeroFeatureCard(
+          icon: Icons.school_rounded,
+          iconColor: const Color(0xFF3B82F6),
+          title: 'For Students',
+          description:
+              'Track course announcements, submit mini-projects, pitch concepts via video, and solve doubts together.',
+        ),
+        const SizedBox(height: 12),
+        _buildHeroFeatureCard(
+          icon: Icons.co_present_rounded,
+          iconColor: const Color(0xFF10B981),
+          title: 'For Educators',
+          description:
+              'Ingest syllabus automatically, assign AI-backed project scenarios, monitor student pair progress, and manage grades.',
+        ),
+        const SizedBox(height: 12),
+        _buildHeroFeatureCard(
+          icon: Icons.security_rounded,
+          iconColor: const Color(0xFF8B5CF6),
+          title: 'Enterprise-Grade Academic Cloud',
+          description:
+              'Encrypted submissions, verified student rosters, and high-availability cloud infrastructure.',
+        ),
+      ],
+    );
+  }
+
+  Widget _buildHeroFeatureCard({
+    required IconData icon,
+    required Color iconColor,
+    required String title,
+    required String description,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.10),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.18)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: iconColor.withValues(alpha: 0.22),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(icon, color: Colors.white, size: 22),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                  ),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  description,
+                  style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.75),
+                    fontSize: 12.5,
+                    height: 1.35,
+                  ),
+                ),
+              ],
             ),
           ),
         ],
@@ -289,7 +483,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 ),
                 const SizedBox(height: 10),
                 SizedBox(
-                  width: double.infinity,
+                  width: 400,
                   height: 46,
                   child: DecoratedBox(
                     decoration: BoxDecoration(

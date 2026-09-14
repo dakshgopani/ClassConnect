@@ -5,6 +5,7 @@ import 'dart:math';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:intl/intl.dart';
 import 'package:demo/widgets/ui/cc_decorated_background.dart';
+import '../../../../widgets/cc_breadcrumb_bar.dart';
 import 'pair_submissions_screen.dart';
 
 class PblDetailScreen extends StatefulWidget {
@@ -12,6 +13,7 @@ class PblDetailScreen extends StatefulWidget {
   final String pblId;
   final String title;
   final Map<String, dynamic> pblData;
+  final String? className;
 
   const PblDetailScreen({
     super.key,
@@ -19,6 +21,7 @@ class PblDetailScreen extends StatefulWidget {
     required this.pblId,
     required this.title,
     required this.pblData,
+    this.className,
   });
 
   @override
@@ -35,6 +38,16 @@ class _PblDetailScreenState extends State<PblDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDesktop = MediaQuery.of(context).size.width >= 800;
+
+    if (isDesktop) {
+      return _buildDesktopLayout();
+    }
+
+    return _buildMobileLayout();
+  }
+
+  Widget _buildMobileLayout() {
     return Scaffold(
       backgroundColor: _bg,
       appBar: AppBar(
@@ -716,6 +729,364 @@ class _PblDetailScreenState extends State<PblDetailScreen> {
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildDesktopLayout() {
+    final currentClassName = widget.className ?? 'Class';
+    return Scaffold(
+      backgroundColor: const Color(0xFFF8FAFC),
+      body: Column(
+        children: [
+          CCBreadcrumbBar(
+            items: [
+              BreadcrumbItem(
+                label: 'Classes',
+                onTap: () => Navigator.of(context).popUntil((route) => route.isFirst),
+              ),
+              BreadcrumbItem(
+                label: currentClassName,
+                onTap: () => Navigator.pop(context),
+              ),
+              BreadcrumbItem(
+                label: 'PBL Projects',
+                onTap: () => Navigator.pop(context),
+              ),
+              BreadcrumbItem(
+                label: widget.title,
+              ),
+            ],
+            trailing: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: const Color(0xFF8B5CF6).withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: const Color(0xFF8B5CF6).withValues(alpha: 0.3)),
+              ),
+              child: const Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.psychology, size: 16, color: Color(0xFF8B5CF6)),
+                  SizedBox(width: 6),
+                  Text(
+                    'PBL Details',
+                    style: TextStyle(
+                      color: Color(0xFF8B5CF6),
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          Expanded(
+            child: Align(
+              alignment: Alignment.topCenter,
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 1200),
+                child: _buildDesktopContent(),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDesktopContent() {
+    return StreamBuilder<DocumentSnapshot>(
+      stream: FirebaseFirestore.instance
+          .collection('classes')
+          .doc(widget.classId)
+          .collection('PBL')
+          .doc(widget.pblId)
+          .snapshots(),
+      builder: (context, snapshot) {
+        if (snapshot.hasError) {
+          return Center(child: Text('Error: ${snapshot.error}'));
+        }
+
+        if (!snapshot.hasData) {
+          return const Center(child: CcLoadingAnimation(color: Color(0xFF8B5CF6)));
+        }
+
+        final pblData = snapshot.data!.data() as Map<String, dynamic>? ?? {};
+        final Timestamp? deadlineTimestamp = pblData['deadline'] as Timestamp?;
+        final DateTime? deadline = deadlineTimestamp?.toDate();
+
+        final assignments = pblData['studentAssignments'] as List? ?? [];
+        int totalStudents = 0;
+        int submittedStudents = 0;
+
+        for (var assignment in assignments) {
+          final students = assignment['students'] as List? ?? [];
+          for (var student in students) {
+            totalStudents++;
+            if (student['submission'] != null &&
+                student['submission']['fileUrl'] != null) {
+              submittedStudents++;
+            }
+          }
+        }
+
+        int remainingStudents = totalStudents - submittedStudents;
+        double submittedPercentage = totalStudents == 0
+            ? 0
+            : (submittedStudents / totalStudents) * 100;
+
+        return SingleChildScrollView(
+          padding: const EdgeInsets.all(32),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    'Problem Statement',
+                    style: TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xFF1E293B),
+                    ),
+                  ),
+                  Row(
+                    children: [
+                      _buildDesktopActionButton(Icons.groups, 'Manage Pairs', _showAssignStudentsDialog),
+                      const SizedBox(width: 12),
+                      _buildDesktopActionButton(Icons.calendar_today, 'Set Deadline', () => _pickDeadline(pblData)),
+                      const SizedBox(width: 12),
+                      _buildDesktopActionButton(Icons.visibility, 'View All', () => _showAssignments(pblData)),
+                    ],
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: const Color(0xFFE2E8F0)),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFF8B5CF6).withValues(alpha: 0.06),
+                      blurRadius: 12,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Text(
+                  pblData['problemStatement'] ?? 'No problem statement',
+                  style: const TextStyle(fontSize: 15, color: Color(0xFF64748B), height: 1.6),
+                ),
+              ),
+              const SizedBox(height: 32),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Learning Objectives',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w700,
+                            color: Color(0xFF1E293B),
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        ...(pblData['learningObjectives'] as List? ?? []).map((obj) =>
+                          Container(
+                            margin: const EdgeInsets.only(bottom: 10),
+                            padding: const EdgeInsets.all(14),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFF1F5F9),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: Row(
+                              children: [
+                                const Icon(Icons.check_circle_outline, color: Color(0xFF8B5CF6), size: 18),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: Text(
+                                    obj.toString(),
+                                    style: const TextStyle(fontSize: 14, color: Color(0xFF1E293B)),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ).toList(),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 32),
+                  SizedBox(
+                    width: 340,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(20),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(color: const Color(0xFFE2E8F0)),
+                            boxShadow: [
+                              BoxShadow(
+                                color: const Color(0xFF8B5CF6).withValues(alpha: 0.06),
+                                blurRadius: 12,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                'Submission Progress',
+                                style: TextStyle(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w700,
+                                  color: Color(0xFF1E293B),
+                                ),
+                              ),
+                              const SizedBox(height: 20),
+                              SizedBox(
+                                height: 160,
+                                child: Row(
+                                  children: [
+                                    Expanded(
+                                      child: PieChart(
+                                        PieChartData(
+                                          sectionsSpace: 0,
+                                          centerSpaceRadius: 40,
+                                          sections: [
+                                            PieChartSectionData(
+                                              color: Colors.green,
+                                              value: submittedStudents.toDouble(),
+                                              title: '${submittedPercentage.toStringAsFixed(0)}%',
+                                              radius: 50,
+                                              titleStyle: const TextStyle(
+                                                fontSize: 16,
+                                                fontWeight: FontWeight.bold,
+                                                color: _textPrimary,
+                                              ),
+                                            ),
+                                            PieChartSectionData(
+                                              color: Colors.redAccent,
+                                              value: remainingStudents.toDouble(),
+                                              title: '',
+                                              radius: 40,
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 16),
+                                    Column(
+                                      children: [
+                                        _buildDesktopLegendItem(color: Colors.green, text: 'Submitted'),
+                                        const SizedBox(height: 6),
+                                        _buildDesktopLegendItem(color: Colors.redAccent, text: 'Remaining'),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(height: 16),
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text('Total:', style: TextStyle(color: Colors.grey.shade600)),
+                                  Text('$totalStudents students', style: const TextStyle(fontWeight: FontWeight.w600)),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                        if (deadline != null) ...[
+                          const SizedBox(height: 16),
+                          Container(
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFF1F5F9),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: const Color(0xFFE2E8F0)),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Row(
+                                  children: [
+                                    Icon(Icons.event, color: Color(0xFF8B5CF6), size: 18),
+                                    SizedBox(width: 8),
+                                    Text(
+                                      'Deadline',
+                                      style: TextStyle(
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w700,
+                                        color: Color(0xFF1E293B),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  DateFormat('EEE, MMM d, yyyy • h:mm a').format(deadline),
+                                  style: const TextStyle(fontSize: 14, color: Color(0xFF64748B)),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildDesktopActionButton(IconData icon, String label, VoidCallback onTap) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(10),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        decoration: BoxDecoration(
+          color: const Color(0xFF8B5CF6).withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, color: const Color(0xFF8B5CF6), size: 18),
+            const SizedBox(width: 6),
+            Text(label, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFF8B5CF6))),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDesktopLegendItem({required Color color, required String text}) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(width: 12, height: 12, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
+        const SizedBox(width: 6),
+        Text(text, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF1E293B))),
+      ],
     );
   }
 }

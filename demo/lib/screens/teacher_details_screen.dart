@@ -1,3 +1,4 @@
+import 'package:demo/widgets/ui/responsive_container.dart';
 import 'package:demo/theme/app_colors.dart';
 import 'package:demo/widgets/ui/cc_button.dart';
 import 'package:demo/widgets/ui/cc_card.dart';
@@ -54,10 +55,13 @@ class _TeacherDetailsScreenState extends State<TeacherDetailsScreen> {
           onPressed: () => Navigator.pop(context),
         ),
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+      body: Center(
+        child: ResponsiveContainer(
+          maxWidth: 680,
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             CcCard(
               glass: true,
@@ -116,7 +120,9 @@ class _TeacherDetailsScreenState extends State<TeacherDetailsScreen> {
           ],
         ),
       ),
-    );
+    ),
+  ),
+);
   }
 
   Future<void> _handleContinue() async {

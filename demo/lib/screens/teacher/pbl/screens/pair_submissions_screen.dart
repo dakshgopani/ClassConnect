@@ -5,6 +5,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:demo/services/groq_service.dart';
 import 'package:demo/services/firestore_service.dart';
+import '../../../../widgets/cc_breadcrumb_bar.dart';
 
 class PairSubmissionsScreen extends StatefulWidget {
   final String classId;
@@ -12,6 +13,8 @@ class PairSubmissionsScreen extends StatefulWidget {
   final int pairNumber;
   final List<dynamic> students;
   final String problemStatement;
+  final String? className;
+  final String? pblTitle;
 
   const PairSubmissionsScreen({
     super.key,
@@ -20,6 +23,8 @@ class PairSubmissionsScreen extends StatefulWidget {
     required this.pairNumber,
     required this.students,
     required this.problemStatement,
+    this.className,
+    this.pblTitle,
   });
 
   @override
@@ -514,8 +519,694 @@ class _PairSubmissionsScreenState extends State<PairSubmissionsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDesktop = MediaQuery.of(context).size.width >= 800;
+
+    if (isDesktop) {
+      return _buildDesktopLayout();
+    }
+
+    return _buildMobileLayout();
+  }
+
+  Widget _buildDesktopLayout() {
+    final currentClassName = widget.className ?? 'Class';
+    final projectTitle = widget.pblTitle ?? 'PBL Project';
+
     return Scaffold(
-      backgroundColor: const Color(0xFFF4F8FF), // Dark Navy background
+      backgroundColor: const Color(0xFFF8FAFC),
+      body: Column(
+        children: [
+          CCBreadcrumbBar(
+            items: [
+              BreadcrumbItem(
+                label: 'Classes',
+                onTap: () => Navigator.of(context).popUntil((route) => route.isFirst),
+              ),
+              BreadcrumbItem(
+                label: currentClassName,
+                onTap: () => Navigator.pop(context),
+              ),
+              BreadcrumbItem(
+                label: 'PBL Projects',
+                onTap: () => Navigator.pop(context),
+              ),
+              BreadcrumbItem(
+                label: projectTitle,
+                onTap: () => Navigator.pop(context),
+              ),
+              BreadcrumbItem(
+                label: 'Pair #${widget.pairNumber}',
+              ),
+            ],
+            trailing: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: const Color(0xFF2E6BFF).withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: const Color(0xFF2E6BFF).withValues(alpha: 0.3)),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.people_alt, size: 16, color: Color(0xFF2E6BFF)),
+                  const SizedBox(width: 6),
+                  Text(
+                    'Pair #${widget.pairNumber}',
+                    style: const TextStyle(
+                      color: Color(0xFF2E6BFF),
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          Expanded(
+            child: Stack(
+              children: [
+                Align(
+                  alignment: Alignment.topCenter,
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 1200),
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.all(32),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _buildDesktopStudentsHeader(),
+                          const SizedBox(height: 32),
+                          if (_evaluationResult != null) ...[
+                            _buildDesktopEvaluationCard(),
+                            const SizedBox(height: 32),
+                          ],
+                          _buildDesktopProjectRoadmap(),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+                if (_isEvaluating) _buildDesktopEvaluatingOverlay(),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDesktopStudentsHeader() {
+    return Container(
+      padding: const EdgeInsets.all(28),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF2E6BFF).withValues(alpha: 0.08),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Pair #${widget.pairNumber} Submissions',
+            style: const TextStyle(
+              fontSize: 22,
+              fontWeight: FontWeight.bold,
+              color: Color(0xFF1E293B),
+            ),
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF2E6BFF).withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(Icons.people_alt, color: Color(0xFF2E6BFF), size: 18),
+              ),
+              const SizedBox(width: 12),
+              const Text(
+                'TEAM MEMBERS',
+                style: TextStyle(
+                  color: Color(0xFF2E6BFF),
+                  fontSize: 11,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 1.5,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          Wrap(
+            spacing: 16,
+            runSpacing: 16,
+            children: widget.students.map((s) {
+              final name = s['name'] ?? 'Unknown';
+              return Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF1F5F9),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: const Color(0xFFE2E8F0)),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    CircleAvatar(
+                      radius: 16,
+                      backgroundColor: const Color(0xFF2E6BFF),
+                      child: Text(
+                        name.isNotEmpty ? name[0].toUpperCase() : 'U',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Text(
+                      name,
+                      style: const TextStyle(
+                        color: Color(0xFF1E293B),
+                        fontWeight: FontWeight.w600,
+                        fontSize: 14,
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }).toList(),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDesktopEvaluationCard() {
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [Colors.indigo.shade900, Colors.indigo.shade800],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: const [
+          BoxShadow(
+            color: Colors.black26,
+            blurRadius: 10,
+            offset: Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(24),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Row(
+                  children: [
+                    Icon(Icons.psychology, color: Colors.white),
+                    SizedBox(width: 12),
+                    Text(
+                      "AI Evaluation Report",
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.2),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text(
+                    "${_evaluationResult!['totalScore']}/100",
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.vertical(bottom: Radius.circular(16)),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  "PAIR ANALYSIS",
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF64748B),
+                    letterSpacing: 1.2,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  _evaluationResult!['pairAnalysis'] ?? 'No analysis available.',
+                  style: const TextStyle(
+                    fontSize: 14,
+                    color: Color(0xFF1E293B),
+                    height: 1.6,
+                  ),
+                ),
+                const SizedBox(height: 24),
+                const Text(
+                  "INDIVIDUAL SCORES",
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF64748B),
+                    letterSpacing: 1.2,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                ...(_evaluationResult!['studentEvaluations'] as List).map(
+                  (eval) => Container(
+                    margin: const EdgeInsets.only(bottom: 12),
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF1F5F9),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: const Color(0xFFE2E8F0)),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              eval['name'],
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: Color(0xFF1E293B),
+                                fontSize: 15,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              eval['feedback'],
+                              style: const TextStyle(
+                                fontSize: 13,
+                                color: Color(0xFF64748B),
+                              ),
+                            ),
+                          ],
+                        ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF2E6BFF).withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
+                            "${eval['score']}/50",
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF2E6BFF),
+                              fontSize: 14,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDesktopProjectRoadmap() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            const Text(
+              "PROJECT ROADMAP",
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF64748B),
+                letterSpacing: 1.2,
+              ),
+            ),
+            IconButton(
+              icon: const Icon(Icons.edit, color: Color(0xFF64748B), size: 20),
+              onPressed: _editMilestones,
+              tooltip: "Edit Milestones",
+            ),
+          ],
+        ),
+        const SizedBox(height: 24),
+        if (_isLoadingMilestones)
+          const Center(
+            child: Padding(
+              padding: EdgeInsets.all(40.0),
+              child: CircularProgressIndicator(),
+            ),
+          )
+        else
+          ..._milestoneNames.asMap().entries.map((entry) {
+            final index = entry.key;
+            final name = entry.value;
+            final isCompleted = _milestoneStatus[name] ?? false;
+
+            bool isNext = false;
+            if (!isCompleted) {
+              if (index == 0) {
+                isNext = true;
+              } else {
+                bool allPrevCompleted = true;
+                for (int i = 0; i < index; i++) {
+                  if (!(_milestoneStatus[_milestoneNames[i]] ?? false)) {
+                    allPrevCompleted = false;
+                    break;
+                  }
+                }
+                isNext = allPrevCompleted;
+              }
+            }
+
+            List<Map<String, dynamic>> submissionsList = [];
+            for (var student in widget.students) {
+              if (student is Map && student['milestone_submissions'] != null) {
+                final submissions = student['milestone_submissions'] as Map<String, dynamic>;
+                if (submissions.containsKey(name)) {
+                  final sub = submissions[name];
+                  submissionsList.add({
+                    'studentName': student['name'] ?? 'Student',
+                    ...sub,
+                  });
+                }
+              }
+            }
+
+            return _buildDesktopMilestoneCard(name, isCompleted, isNext, submissionsList);
+          }),
+        const SizedBox(height: 40),
+      ],
+    );
+  }
+
+  Widget _buildDesktopMilestoneCard(
+    String title,
+    bool isCompleted,
+    bool isNext,
+    List<Map<String, dynamic>> submissions,
+  ) {
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 300),
+      margin: const EdgeInsets.only(bottom: 20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: isNext
+              ? Colors.orange.withValues(alpha: 0.3)
+              : (isCompleted ? Colors.green.withValues(alpha: 0.3) : const Color(0xFFE2E8F0)),
+          width: isNext ? 2 : 1,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(20),
+            child: Row(
+              children: [
+                Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: isCompleted
+                        ? Colors.green
+                        : (isNext ? Colors.orange : const Color(0xFFE2E8F0)),
+                    shape: BoxShape.circle,
+                    boxShadow: isCompleted || isNext
+                        ? [
+                            BoxShadow(
+                              color: (isCompleted ? Colors.green : Colors.orange).withValues(alpha: 0.3),
+                              blurRadius: 8,
+                              offset: const Offset(0, 2),
+                            ),
+                          ]
+                        : null,
+                  ),
+                  child: Icon(
+                    isCompleted
+                        ? Icons.check
+                        : (isNext ? Icons.access_time : Icons.lock),
+                    color: Colors.white,
+                    size: 20,
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: isCompleted || isNext ? FontWeight.bold : FontWeight.w500,
+                          color: isCompleted || isNext ? const Color(0xFF1E293B) : const Color(0xFF94A3B8),
+                        ),
+                      ),
+                      if (!isCompleted && isNext) ...[
+                        const SizedBox(height: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: Colors.orange.withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: const Text(
+                            "Current Phase",
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: Colors.orange,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+                if (isNext || isCompleted) ...[
+                  const SizedBox(width: 16),
+                  SizedBox(
+                    height: 28,
+                    width: 28,
+                    child: Checkbox(
+                      value: isCompleted,
+                      onChanged: (val) => _toggleMilestone(title),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      activeColor: Colors.green,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+          if (submissions.isNotEmpty)
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF8FAFC),
+                borderRadius: const BorderRadius.vertical(bottom: Radius.circular(16)),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: submissions
+                    .map(
+                      (sub) => Container(
+                        margin: const EdgeInsets.only(bottom: 12),
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: const Color(0xFFE2E8F0)),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Text(
+                                  sub['studentName'] ?? 'Student',
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 14,
+                                    color: Color(0xFF1E293B),
+                                  ),
+                                ),
+                                const Spacer(),
+                                Text(
+                                  _formatDate(sub['submittedAt']),
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    color: Color(0xFF94A3B8),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 12),
+                            Row(
+                              children: [
+                                if (sub['fileUrl'] != null)
+                                  InkWell(
+                                    onTap: () => _launchFile(context, sub['fileUrl']),
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFF2E6BFF).withValues(alpha: 0.05),
+                                        borderRadius: BorderRadius.circular(8),
+                                        border: Border.all(color: const Color(0xFF2E6BFF).withValues(alpha: 0.2)),
+                                      ),
+                                      child: Row(
+                                        children: [
+                                          const Icon(Icons.insert_drive_file, size: 16, color: Color(0xFF2E6BFF)),
+                                          const SizedBox(width: 8),
+                                          Text(
+                                            sub['fileName'] ?? 'Attachment',
+                                            style: const TextStyle(
+                                              fontSize: 13,
+                                              color: Color(0xFF2E6BFF),
+                                              fontWeight: FontWeight.w500,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                if (sub['fileUrl'] != null && sub['voiceUrl'] != null)
+                                  const SizedBox(width: 12),
+                                if (sub['voiceUrl'] != null)
+                                  InkWell(
+                                    onTap: () => _toggleAudio(sub['voiceUrl']),
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFF2E6BFF).withValues(alpha: 0.05),
+                                        borderRadius: BorderRadius.circular(8),
+                                        border: Border.all(color: const Color(0xFF2E6BFF).withValues(alpha: 0.2)),
+                                      ),
+                                      child: Row(
+                                        children: [
+                                          Icon(
+                                            _currentlyPlayingUrl == sub['voiceUrl'] && _isPlaying
+                                                ? Icons.pause_circle
+                                                : Icons.play_circle,
+                                            size: 18,
+                                            color: const Color(0xFF2E6BFF),
+                                          ),
+                                          const SizedBox(width: 8),
+                                          const Text(
+                                            "Play Audio",
+                                            style: TextStyle(
+                                              fontSize: 13,
+                                              color: Color(0xFF2E6BFF),
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    )
+                    .toList(),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDesktopEvaluatingOverlay() {
+    return Container(
+      color: Colors.black54,
+      child: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: const Column(
+                children: [
+                  CircularProgressIndicator(color: Color(0xFF8B5CF6)),
+                  SizedBox(height: 20),
+                  Text(
+                    "AI Evaluating Submissions...",
+                    style: TextStyle(
+                      color: Color(0xFF1E293B),
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMobileLayout() {
+    return Scaffold(
+      backgroundColor: const Color(0xFFF4F8FF),
       appBar: AppBar(
         title: Text(
           'Pair ${widget.pairNumber} Dashboard',

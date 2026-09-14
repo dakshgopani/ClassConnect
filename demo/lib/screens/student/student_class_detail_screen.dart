@@ -16,14 +16,19 @@ import 'package:firebase_storage/firebase_storage.dart';
 import 'resources/student_resources_screen.dart';
 import '../../services/gemini_homework_service.dart';
 import 'assignment/student_assignment_detail_screen.dart';
+import 'package:demo/widgets/cc_breadcrumb_bar.dart';
+import 'package:demo/theme/app_colors.dart';
+import 'package:demo/theme/app_spacing.dart';
 
 class StudentClassDetailScreen extends StatefulWidget {
   final String classId;
+  final String? className;
   final int initialTabIndex;
 
   const StudentClassDetailScreen({
     super.key,
     required this.classId,
+    this.className,
     this.initialTabIndex = 0,
   });
 
@@ -62,138 +67,457 @@ class _StudentClassDetailScreenState extends State<StudentClassDetailScreen>
       return const Scaffold(body: Center(child: Text("User not logged in")));
     }
 
-    return Scaffold(
-      backgroundColor: const Color(0xFFF4F8FF),
-      drawer: _buildDrawer(context, student),
+    final isDesktop = MediaQuery.of(context).size.width >= 800;
 
-      /// 🔹 FETCH STUDENT NAME AND CLASS DATA
-      body: StreamBuilder<DocumentSnapshot>(
-        stream: FirebaseFirestore.instance
-            .collection('classes')
-            .doc(widget.classId)
-            .snapshots(),
-        builder: (context, classSnapshot) {
-          if (!classSnapshot.hasData || !classSnapshot.data!.exists) {
-            return Container(
-              color: const Color(0xFFF4F8FF),
-              child: const Center(
-                child: CcLoadingAnimation(color: Color(0xFF2E6BFF)),
-              ),
+    return StreamBuilder<DocumentSnapshot>(
+      stream: FirebaseFirestore.instance
+          .collection('classes')
+          .doc(widget.classId)
+          .snapshots(),
+      builder: (context, classSnapshot) {
+        if (!classSnapshot.hasData || !classSnapshot.data!.exists) {
+          return Scaffold(
+            backgroundColor: AppColors.background,
+            body: const Center(
+              child: CcLoadingAnimation(color: AppColors.primary),
+            ),
+          );
+        }
+
+        final classData = classSnapshot.data!.data() as Map<String, dynamic>;
+        final className = widget.className ?? (classData['class_name'] ?? 'Class');
+        final canStudentPost = classData['studentCanPost'] == true;
+        final pblEnabled = classData['pblEnabled'] != false;
+
+        return StreamBuilder<DocumentSnapshot>(
+          stream: FirebaseFirestore.instance
+              .collection('students')
+              .doc(student.uid)
+              .snapshots(),
+          builder: (context, studentSnap) {
+            final studentData =
+                studentSnap.data?.data() as Map<String, dynamic>?;
+            final String studentName = studentData?['name'] ?? 'Student';
+
+            final content = Column(
+              children: [
+                if (isDesktop)
+                  _buildDesktopTopBar(context, className, classData)
+                else
+                  _buildMobileTopBar(context, className),
+
+                // Tab Bar
+                Container(
+                  color: AppColors.surface,
+                  child: TabBar(
+                    controller: _tabController,
+                    indicatorColor: AppColors.primary,
+                    labelColor: AppColors.primary,
+                    unselectedLabelColor: AppColors.textMuted,
+                    tabs: const [
+                      Tab(text: "Posts"),
+                      Tab(text: "Assignments"),
+                      Tab(text: "Homework"),
+                      Tab(text: "Details"),
+                    ],
+                  ),
+                ),
+
+                // Tab Views
+                Expanded(
+                  child: TabBarView(
+                    controller: _tabController,
+                    children: [
+                      _PostsTab(
+                        classId: widget.classId,
+                        canStudentPost: canStudentPost,
+                      ),
+                      _AssignmentsTab(
+                        classId: widget.classId,
+                        className: className,
+                      ),
+                      _HomeworkTab(
+                        classId: widget.classId,
+                        className: className,
+                        studentName: studentName,
+                        studentId: student.uid,
+                      ),
+                      _DetailsTab(
+                        classData: classData,
+                        studentName: studentName,
+                        classId: widget.classId,
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             );
-          }
 
-          final classData = classSnapshot.data!.data() as Map<String, dynamic>;
-          final className = classData['class_name'] ?? 'Class';
-          final canStudentPost = classData['studentCanPost'] == true;
-
-          return StreamBuilder<DocumentSnapshot>(
-            stream: FirebaseFirestore.instance
-                .collection('students')
-                .doc(student.uid)
-                .snapshots(),
-            builder: (context, studentSnap) {
-              if (!studentSnap.hasData || !studentSnap.data!.exists) {
-                return Container(
-                  color: const Color(0xFFF4F8FF),
-                  child: const Center(
-                    child: CcLoadingAnimation(color: Color(0xFF2E6BFF)),
-                  ),
-                );
-              }
-
-              final studentData =
-                  studentSnap.data!.data() as Map<String, dynamic>;
-              final String studentName = studentData['name'] ?? 'Student';
-
-              return Column(
-                children: [
-                  // Custom AppBar
-                  Container(
-                    color: const Color(0xFFF4F8FF),
-                    padding: const EdgeInsets.only(top: 30),
-                    child: Row(
+            return Scaffold(
+              backgroundColor: AppColors.background,
+              drawer: isDesktop ? null : _buildDrawer(context, student),
+              body: isDesktop
+                  ? Row(
                       children: [
-                        Builder(
-                          builder: (context) => IconButton(
-                            icon: const Icon(
-                              Icons.menu,
-                              color: Color(0xFF0D1B3D),
-                            ),
-                            onPressed: () {
-                              Scaffold.of(context).openDrawer();
-                            },
-                          ),
-                        ),
-                        Expanded(
-                          child: Text(
-                            className,
-                            style: const TextStyle(
-                              color: Color(0xFF0D1B3D),
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                        ),
-                        IconButton(
-                          icon: const Icon(
-                            Icons.arrow_back_ios_new_rounded,
-                            color: Color(0xFF0D1B3D),
-                          ),
-                          onPressed: () {
-                            Navigator.pop(context);
-                          },
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  // Tab Bar
-                  Container(
-                    color: const Color(0xFFF4F8FF),
-                    child: TabBar(
-                      controller: _tabController,
-                      indicatorColor: const Color(0xFF2E6BFF),
-                      labelColor: const Color(0xFF0D1B3D),
-                      unselectedLabelColor: const Color(0xFF5C6B8C),
-                      tabs: const [
-                        Tab(text: "Posts"),
-                        Tab(text: "Assignments"),
-                        Tab(text: "Homework"),
-                        Tab(text: "Details"),
-                      ],
-                    ),
-                  ),
-
-                  // Tab Views
-                  Expanded(
-                    child: TabBarView(
-                      controller: _tabController,
-                      children: [
-                        _PostsTab(
-                          classId: widget.classId,
-                          canStudentPost: canStudentPost,
-                        ),
-                        _AssignmentsTab(classId: widget.classId),
-                        _HomeworkTab(
-                          classId: widget.classId,
+                        _buildSidebar(
+                          context: context,
+                          student: student,
                           className: className,
                           studentName: studentName,
-                          studentId: student.uid,
-                        ),
-                        _DetailsTab(
+                          pblEnabled: pblEnabled,
                           classData: classData,
-                          studentName: studentName,
-                          classId: widget.classId,
                         ),
+                        Expanded(child: content),
                       ],
+                    )
+                  : content,
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildMobileTopBar(BuildContext context, String className) {
+    return Container(
+      color: AppColors.surface,
+      padding: EdgeInsets.only(top: MediaQuery.of(context).padding.top + 8, bottom: 8, left: 4, right: 4),
+      child: Row(
+        children: [
+          Builder(
+            builder: (ctx) => IconButton(
+              icon: const Icon(Icons.menu, color: AppColors.textPrimary),
+              tooltip: 'Menu',
+              onPressed: () => Scaffold.of(ctx).openDrawer(),
+            ),
+          ),
+          Expanded(
+            child: Text(
+              className,
+              style: const TextStyle(
+                color: AppColors.textPrimary,
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+              ),
+              textAlign: TextAlign.center,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          IconButton(
+            icon: const Icon(Icons.arrow_back_ios_new_rounded, color: AppColors.textPrimary),
+            tooltip: 'Back',
+            onPressed: () => Navigator.pop(context),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDesktopTopBar(
+    BuildContext context,
+    String className,
+    Map<String, dynamic> data,
+  ) {
+    return Container(
+      height: 64,
+      padding: const EdgeInsets.symmetric(horizontal: 24),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        border: Border(
+          bottom: BorderSide(color: Colors.black.withValues(alpha: 0.08)),
+        ),
+      ),
+      child: Row(
+        children: [
+          IconButton(
+            icon: const Icon(Icons.arrow_back_rounded, color: AppColors.textPrimary),
+            onPressed: () => Navigator.pop(context),
+            tooltip: 'Back to Classes',
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Row(
+              children: [
+                InkWell(
+                  onTap: () => Navigator.pop(context),
+                  child: const Text(
+                    'Classes / ',
+                    style: TextStyle(
+                      color: AppColors.textMuted,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
                     ),
                   ),
+                ),
+                Flexible(
+                  child: Text(
+                    className,
+                    style: const TextStyle(
+                      color: AppColors.textPrimary,
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          if (data['subject'] != null && data['subject'].toString().isNotEmpty)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: AppColors.primary.withValues(alpha: 0.08),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text(
+                data['subject'],
+                style: const TextStyle(
+                  color: AppColors.primary,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSidebar({
+    required BuildContext context,
+    required User student,
+    required String className,
+    required String studentName,
+    required bool pblEnabled,
+    Map<String, dynamic>? classData,
+  }) {
+    return Container(
+      width: 260,
+      height: double.infinity,
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [Color(0xFF1E293B), Color(0xFF0F172A)],
+        ),
+      ),
+      child: Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.fromLTRB(20, 32, 20, 20),
+            child: Column(
+              children: [
+                Container(
+                  width: 52,
+                  height: 52,
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFF3B82F6), Color(0xFF60A5FA)],
+                    ),
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: const Icon(Icons.school_rounded, color: Colors.white, size: 28),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  className,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                  ),
+                  textAlign: TextAlign.center,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  studentName,
+                  style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.75),
+                    fontSize: 13,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
+          ),
+          const Divider(color: Color(0xFF334155), height: 1),
+          Expanded(
+            child: ListView(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+              children: [
+                _buildSidebarMenuItem(
+                  icon: Icons.link_rounded,
+                  label: "Class Resources",
+                  color: const Color(0xFF3B82F6),
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => StudentResourcesScreen(
+                          classId: widget.classId,
+                          className: className,
+                        ),
+                      ),
+                    );
+                  },
+                ),
+                const SizedBox(height: 6),
+                _buildSidebarMenuItem(
+                  icon: Icons.quiz_rounded,
+                  label: "Smart Quizzes",
+                  color: const Color(0xFFEC4899),
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => _QuizSection(
+                          classId: widget.classId,
+                          className: className,
+                          studentId: student.uid,
+                          studentName: studentName,
+                        ),
+                      ),
+                    );
+                  },
+                ),
+                const SizedBox(height: 6),
+                _buildSidebarMenuItem(
+                  icon: Icons.bar_chart_rounded,
+                  label: "Attendance",
+                  color: const Color(0xFF10B981),
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => StudentAttendanceScreen(
+                          classId: widget.classId,
+                          className: className,
+                        ),
+                      ),
+                    );
+                  },
+                ),
+                const SizedBox(height: 6),
+                _buildSidebarMenuItem(
+                  icon: Icons.emoji_events_rounded,
+                  label: "Leaderboard",
+                  color: const Color(0xFFF59E0B),
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => ClassLeaderboardScreen(
+                          classId: widget.classId,
+                          className: className,
+                        ),
+                      ),
+                    );
+                  },
+                ),
+                if (pblEnabled) ...[
+                  const SizedBox(height: 18),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    child: Text(
+                      "PROJECT-BASED LEARNING",
+                      style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.4),
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 1.1,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  _buildSidebarMenuItem(
+                    icon: Icons.rocket_launch_rounded,
+                    label: "My PBL Projects",
+                    color: const Color(0xFF8B5CF6),
+                    onTap: () {
+                      _showPblProjects(context, student.uid, className);
+                    },
+                  ),
+                  const SizedBox(height: 6),
+                  _buildSidebarMenuItem(
+                    icon: Icons.code_rounded,
+                    label: "Mini Projects",
+                    color: const Color(0xFF06B6D4),
+                    onTap: () {
+                      _showMiniProjects(context, student.uid, className);
+                    },
+                  ),
                 ],
-              );
-            },
-          );
-        },
+              ],
+            ),
+          ),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: const BoxDecoration(
+              border: Border(top: BorderSide(color: Color(0xFF334155), width: 1)),
+            ),
+            child: InkWell(
+              onTap: () => Navigator.pop(context),
+              borderRadius: BorderRadius.circular(8),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                child: Row(
+                  children: [
+                    const Icon(Icons.arrow_back_ios_new_rounded, color: Color(0xFF94A3B8), size: 16),
+                    const SizedBox(width: 10),
+                    const Text(
+                      'Back to Classes',
+                      style: TextStyle(color: Color(0xFF94A3B8), fontSize: 13, fontWeight: FontWeight.w500),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSidebarMenuItem({
+    required IconData icon,
+    required String label,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(10),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(7),
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(7),
+              ),
+              child: Icon(icon, color: color, size: 18),
+            ),
+            const SizedBox(width: 11),
+            Expanded(
+              child: Text(
+                label,
+                style: const TextStyle(
+                  color: Color(0xFFE2E8F0),
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -310,11 +634,13 @@ class _StudentClassDetailScreenState extends State<StudentClassDetailScreen>
                           subtitle: "Test your knowledge",
                           iconColor: const Color(0xFFEC4899),
                           onTap: () {
+                            Navigator.pop(context);
                             Navigator.push(
                               context,
                               MaterialPageRoute(
                                 builder: (context) => _QuizSection(
                                   classId: widget.classId,
+                                  className: className,
                                   studentId: student.uid,
                                   studentName: studentName,
                                 ),
@@ -330,11 +656,13 @@ class _StudentClassDetailScreenState extends State<StudentClassDetailScreen>
                           subtitle: "Track your presence",
                           iconColor: const Color(0xFF10B981),
                           onTap: () {
+                            Navigator.pop(context);
                             Navigator.push(
                               context,
                               MaterialPageRoute(
                                 builder: (_) => StudentAttendanceScreen(
                                   classId: widget.classId,
+                                  className: className,
                                 ),
                               ),
                             );
@@ -348,12 +676,13 @@ class _StudentClassDetailScreenState extends State<StudentClassDetailScreen>
                           subtitle: "Your class ranking",
                           iconColor: const Color(0xFFFBBF24),
                           onTap: () {
-                            // Navigator.pop(context);
+                            Navigator.pop(context);
                             Navigator.push(
                               context,
                               MaterialPageRoute(
                                 builder: (_) => ClassLeaderboardScreen(
                                   classId: widget.classId,
+                                  className: className,
                                 ),
                               ),
                             );
@@ -382,7 +711,7 @@ class _StudentClassDetailScreenState extends State<StudentClassDetailScreen>
                             iconColor: const Color(0xFF8B5CF6),
                             onTap: () {
                               Navigator.pop(context);
-                              _showPblProjects(context, student.uid);
+                              _showPblProjects(context, student.uid, className);
                             },
                           ),
                           const SizedBox(height: 8),
@@ -394,7 +723,7 @@ class _StudentClassDetailScreenState extends State<StudentClassDetailScreen>
                             iconColor: const Color(0xFF06B6D4),
                             onTap: () {
                               Navigator.pop(context);
-                              _showMiniProjects(context, student.uid);
+                              _showMiniProjects(context, student.uid, className);
                             },
                           ),
                         ],
@@ -486,8 +815,9 @@ class _StudentClassDetailScreenState extends State<StudentClassDetailScreen>
   void _showQuizOptions(
     BuildContext context,
     String studentId,
-    String studentName,
-  ) async {
+    String studentName, [
+    String? className,
+  ]) async {
     final attemptId = "${widget.classId}_${studentId}_diagnostic";
     final attemptSnap = await FirebaseFirestore.instance
         .collection('quiz_attempts')
@@ -504,6 +834,7 @@ class _StudentClassDetailScreenState extends State<StudentClassDetailScreen>
         MaterialPageRoute(
           builder: (_) => PracticeConceptListScreen(
             classId: widget.classId,
+            className: className ?? widget.className,
             studentId: studentId,
             studentName: studentName,
           ),
@@ -513,25 +844,27 @@ class _StudentClassDetailScreenState extends State<StudentClassDetailScreen>
   }
 
   /// 🔹 SHOW PBL PROJECTS
-  void _showPblProjects(BuildContext context, String userId) {
+  void _showPblProjects(BuildContext context, String userId, [String? className]) {
     Navigator.push(
       context,
       MaterialPageRoute(
         builder: (_) =>
-            _PblProjectsScreen(classId: widget.classId, userId: userId),
+            _PblProjectsScreen(classId: widget.classId, className: className ?? widget.className, userId: userId),
       ),
     );
   }
 
   /// 🔹 SHOW MINI PROJECTS
-  void _showMiniProjects(BuildContext context, String userId) {
+  void _showMiniProjects(BuildContext context, String userId, [String? className]) {
     Navigator.push(
       context,
       MaterialPageRoute(
         builder: (_) => _MiniProjectsScreen(
           classId: widget.classId,
+          className: className ?? widget.className,
           userId: userId,
-          onSelectMiniProject: _selectMiniProject,
+          onSelectMiniProject: (ctx, pblId, miniProject, pblTitle) =>
+              _selectMiniProject(ctx, pblId, miniProject, pblTitle, className ?? widget.className),
         ),
       ),
     );
@@ -542,8 +875,9 @@ class _StudentClassDetailScreenState extends State<StudentClassDetailScreen>
     BuildContext context,
     String pblId,
     Map<String, dynamic> miniProject,
-    String pblTitle,
-  ) {
+    String pblTitle, [
+    String? className,
+  ]) {
     final student = FirebaseAuth.instance.currentUser;
     if (student == null) return;
 
@@ -619,6 +953,7 @@ class _StudentClassDetailScreenState extends State<StudentClassDetailScreen>
                 pblId,
                 miniProject,
                 student.uid,
+                className,
               );
             },
             child: Text(
@@ -639,8 +974,9 @@ class _StudentClassDetailScreenState extends State<StudentClassDetailScreen>
     BuildContext context,
     String pblId,
     Map<String, dynamic> miniProject,
-    String studentId,
-  ) {
+    String studentId, [
+    String? className,
+  ]) {
     // Save selection to Firestore with timestamp for consistency
     FirebaseFirestore.instance
         .collection('classes')
@@ -675,6 +1011,7 @@ class _StudentClassDetailScreenState extends State<StudentClassDetailScreen>
                     MaterialPageRoute(
                       builder: (_) => StudentMiniProjectDetailScreen(
                         classId: widget.classId,
+                        className: className ?? widget.className,
                         pblId: pblId,
                         studentId: studentId,
                         selectionData: miniProject,
@@ -793,100 +1130,120 @@ class _StudentClassDetailScreenState extends State<StudentClassDetailScreen>
 
 class _QuizSection extends StatelessWidget {
   final String classId;
+  final String? className;
   final String studentId;
   final String studentName;
 
   const _QuizSection({
     required this.classId,
+    this.className,
     required this.studentId,
     required this.studentName,
   });
 
   @override
   Widget build(BuildContext context) {
+    final currentClassName = className ?? 'Class';
+
     return Scaffold(
-      backgroundColor: const Color(0xFFF4F8FF),
-      appBar: AppBar(
-        elevation: 0,
-        backgroundColor: const Color(0xFFF4F8FF),
-        foregroundColor: const Color(0xFF0D1B3D),
-        title: const Text("Concept Practice"),
-        centerTitle: true,
-        leading: IconButton(
-          icon: const Icon(
-            Icons.arrow_back_ios_new_rounded,
-            color: Color(0xFF0D1B3D),
-          ),
-          onPressed: () {
-            Navigator.pop(context);
-          },
-        ),
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: StreamBuilder<QuerySnapshot>(
-          stream: FirebaseFirestore.instance
-              .collection('quiz_attempts')
-              .where('classId', isEqualTo: classId)
-              .where('studentId', isEqualTo: studentId)
-              .snapshots(),
-          builder: (context, snapshot) {
-            // 🔄 Loading
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return const Center(
-                child: CcLoadingAnimation(color: Color(0xFF7A89A8)),
-              );
-            }
+      backgroundColor: AppColors.background,
+      body: SafeArea(
+        child: Column(
+          children: [
+            CCBreadcrumbBar(
+              items: [
+                BreadcrumbItem(
+                  label: 'Classes',
+                  onTap: () {
+                    Navigator.of(context).popUntil((route) => route.isFirst);
+                  },
+                ),
+                BreadcrumbItem(
+                  label: currentClassName,
+                  onTap: () {
+                    Navigator.of(context).pop();
+                  },
+                ),
+                const BreadcrumbItem(label: 'Quizzes'),
+              ],
+            ),
+            Expanded(
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 1000),
+                  child: Padding(
+                    padding: const EdgeInsets.all(AppSpacing.lg),
+                    child: StreamBuilder<QuerySnapshot>(
+                      stream: FirebaseFirestore.instance
+                          .collection('quiz_attempts')
+                          .where('classId', isEqualTo: classId)
+                          .where('studentId', isEqualTo: studentId)
+                          .snapshots(),
+                      builder: (context, snapshot) {
+                        // 🔄 Loading
+                        if (snapshot.connectionState == ConnectionState.waiting) {
+                          return const Center(
+                            child: CcLoadingAnimation(color: Color(0xFF7A89A8)),
+                          );
+                        }
 
-            // ❌ No data
-            if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-              return _InfoCard(
-                title: "No chapter quiz attempted yet",
-                subtitle: "Attempt quizzes from Posts",
-              );
-            }
+                        // ❌ No data
+                        if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                          return const _InfoCard(
+                            title: "No chapter quiz attempted yet",
+                            subtitle: "Attempt quizzes from Posts",
+                          );
+                        }
 
-            /// ✅ FILTER ONLY CHAPTER QUIZZES
-            final chapterAttempts = snapshot.data!.docs.where((doc) {
-              final data = doc.data() as Map<String, dynamic>;
-              return data['chapterId'] != null;
-            }).toList();
+                        /// ✅ FILTER ONLY CHAPTER QUIZZES
+                        final chapterAttempts = snapshot.data!.docs.where((doc) {
+                          final data = doc.data() as Map<String, dynamic>;
+                          return data['chapterId'] != null;
+                        }).toList();
 
-            if (chapterAttempts.isEmpty) {
-              return _InfoCard(
-                title: "No chapter quiz attempted yet",
-                subtitle: "Attempt quizzes from Posts",
-              );
-            }
+                        if (chapterAttempts.isEmpty) {
+                          return const _InfoCard(
+                            title: "No chapter quiz attempted yet",
+                            subtitle: "Attempt quizzes from Posts",
+                          );
+                        }
 
-            /// ✅ MERGE WEAK CONCEPTS
-            final Set<String> weakConcepts = {};
+                        /// ✅ MERGE WEAK CONCEPTS
+                        final Set<String> weakConcepts = {};
 
-            for (final doc in chapterAttempts) {
-              final data = doc.data() as Map<String, dynamic>;
-              final List<String> wc = List<String>.from(
-                data['weakConcepts'] ?? [],
-              );
-              weakConcepts.addAll(wc);
-            }
+                        for (final doc in chapterAttempts) {
+                          final data = doc.data() as Map<String, dynamic>;
+                          final List<String> wc = List<String>.from(
+                            data['weakConcepts'] ?? [],
+                          );
+                          weakConcepts.addAll(wc);
+                        }
 
-            /// 🔴 WEAK CONCEPT PRACTICE
-            if (weakConcepts.isNotEmpty) {
-              return _ImproveConceptsCard(
-                weakConcepts: weakConcepts.toList(),
-                masteryScore: (weakConcepts.length * 10).clamp(20, 100),
-                classId: classId,
-                studentName: studentName,
-              );
-            }
+                        /// 🔴 WEAK CONCEPT PRACTICE
+                        if (weakConcepts.isNotEmpty) {
+                          return _ImproveConceptsCard(
+                            weakConcepts: weakConcepts.toList(),
+                            masteryScore: (weakConcepts.length * 10).clamp(20, 100),
+                            classId: classId,
+                            className: currentClassName,
+                            studentName: studentName,
+                          );
+                        }
 
-            /// 🟢 FREE PRACTICE
-            return _ConceptQuizCard(
-              classId: classId,
-              studentId: studentId,
-              studentName: studentName,
-            );
-          },
+                        /// 🟢 FREE PRACTICE
+                        return _ConceptQuizCard(
+                          classId: classId,
+                          className: currentClassName,
+                          studentId: studentId,
+                          studentName: studentName,
+                        );
+                      },
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -928,12 +1285,14 @@ class _ImproveConceptsCard extends StatelessWidget {
   final List<String> weakConcepts;
   final int masteryScore;
   final String classId;
+  final String? className;
   final String studentName;
 
   const _ImproveConceptsCard({
     required this.weakConcepts,
     required this.masteryScore,
     required this.classId,
+    this.className,
     required this.studentName,
   });
 
@@ -1003,6 +1362,7 @@ class _ImproveConceptsCard extends StatelessWidget {
                         MaterialPageRoute(
                           builder: (_) => PracticeConceptListScreen(
                             classId: classId,
+                            className: className,
                             studentId: FirebaseAuth.instance.currentUser!.uid,
                             studentName: studentName,
                           ),
@@ -1023,11 +1383,13 @@ class _ImproveConceptsCard extends StatelessWidget {
 
 class _ConceptQuizCard extends StatelessWidget {
   final String classId;
+  final String? className;
   final String studentId;
   final String studentName;
 
   const _ConceptQuizCard({
     required this.classId,
+    this.className,
     required this.studentId,
     required this.studentName,
   });
@@ -1046,6 +1408,7 @@ class _ConceptQuizCard extends StatelessWidget {
             MaterialPageRoute(
               builder: (_) => PracticeConceptListScreen(
                 classId: classId,
+                className: className,
                 studentId: studentId,
                 studentName: studentName,
               ),
@@ -1134,7 +1497,10 @@ class _PostsTabState extends State<_PostsTab> {
 
     return Container(
       color: const Color(0xFFF4F8FF),
-      child: Column(
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 1000),
+          child: Column(
         children: [
           Expanded(
             child: StreamBuilder<QuerySnapshot>(
@@ -1468,14 +1834,17 @@ class _PostsTabState extends State<_PostsTab> {
             ),
         ],
       ),
-    );
+    ),
+  ),
+);
   }
 }
 
 class _AssignmentsTab extends StatelessWidget {
   final String classId;
+  final String? className;
 
-  const _AssignmentsTab({super.key, this.classId = ''});
+  const _AssignmentsTab({super.key, this.classId = '', this.className});
 
   @override
   Widget build(BuildContext context) {
@@ -1517,66 +1886,72 @@ class _AssignmentsTab extends StatelessWidget {
             );
           }
 
-          return ListView.builder(
-            padding: const EdgeInsets.all(16),
-            itemCount: snapshot.data!.docs.length,
-            itemBuilder: (context, index) {
-              final doc = snapshot.data!.docs[index];
-              final data = doc.data() as Map<String, dynamic>;
+          return Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 1000),
+              child: ListView.builder(
+                padding: const EdgeInsets.all(16),
+                itemCount: snapshot.data!.docs.length,
+                itemBuilder: (context, index) {
+                  final doc = snapshot.data!.docs[index];
+                  final data = doc.data() as Map<String, dynamic>;
 
-              return Card(
-                color: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  side: const BorderSide(color: Color(0x1A2E6BFF)),
-                ),
-                margin: const EdgeInsets.only(bottom: 12),
-                child: ListTile(
-                  contentPadding: const EdgeInsets.all(16),
-                  leading: Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: const Color(0x142E6BFF),
+                  return Card(
+                    color: Colors.white,
+                    shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
+                      side: const BorderSide(color: Color(0x1A2E6BFF)),
                     ),
-                    child: const Icon(
-                      Icons.assignment,
-                      color: Color(0xFF2E6BFF),
-                    ),
-                  ),
-                  title: Text(
-                    data['title'] ?? 'Untitled Assignment',
-                    style: const TextStyle(
-                      color: const Color(0xFF0D1B3D),
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  subtitle: Text(
-                    data['description'] ?? '',
-                    style: const TextStyle(color: Color(0xFF5C6B8C)),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  trailing: const Icon(
-                    Icons.arrow_forward_ios,
-                    color: Color(0xFFA5B2C8),
-                    size: 16,
-                  ),
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => StudentAssignmentDetailScreen(
-                          classId: classId,
-                          assignmentId: doc.id,
-                          assignmentData: data,
+                    margin: const EdgeInsets.only(bottom: 12),
+                    child: ListTile(
+                      contentPadding: const EdgeInsets.all(16),
+                      leading: Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: const Color(0x142E6BFF),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: const Icon(
+                          Icons.assignment,
+                          color: Color(0xFF2E6BFF),
                         ),
                       ),
-                    );
-                  },
-                ),
-              );
-            },
+                      title: Text(
+                        data['title'] ?? 'Untitled Assignment',
+                        style: const TextStyle(
+                          color: const Color(0xFF0D1B3D),
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      subtitle: Text(
+                        data['description'] ?? '',
+                        style: const TextStyle(color: Color(0xFF5C6B8C)),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      trailing: const Icon(
+                        Icons.arrow_forward_ios,
+                        color: Color(0xFFA5B2C8),
+                        size: 16,
+                      ),
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => StudentAssignmentDetailScreen(
+                              classId: classId,
+                              className: className,
+                              assignmentId: doc.id,
+                              assignmentData: data,
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  );
+                },
+              ),
+            ),
           );
         },
       ),
@@ -2043,7 +2418,10 @@ class _ActiveHomeworkViewState extends State<_ActiveHomeworkView> {
     final feedback = widget.submissionData?['feedback'];
     final previousFileName = widget.submissionData?['attachmentName'];
 
-    return Column(
+    return Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 1000),
+        child: Column(
       children: [
         /// 🔹 TOP ACTIONS (REGENERATE IF NOT SUBMITTED)
         if (widget.onRetry != null && !widget.isReadOnly)
@@ -2492,7 +2870,9 @@ class _ActiveHomeworkViewState extends State<_ActiveHomeworkView> {
           ),
         ),
       ],
-    );
+    ),
+  ),
+);
   }
 
   Widget _buildSectionHeader(String title, IconData icon) {
@@ -2531,50 +2911,54 @@ class _DetailsTab extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF4F8FF),
+      body: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 1000),
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _infoCard("Class Name", classData['class_name']),
+                _infoCard("Subject", classData['subject']),
+                _infoCard("Class Code", classData['class_code']),
+                _infoCard(
+                  "Students Joined",
+                  (classData['student_count'] ?? 0).toString(),
+                ),
 
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _infoCard("Class Name", classData['class_name']),
-            _infoCard("Subject", classData['subject']),
-            _infoCard("Class Code", classData['class_code']),
-            _infoCard(
-              "Students Joined",
-              (classData['student_count'] ?? 0).toString(),
-            ),
+                const SizedBox(height: 24),
 
-            const SizedBox(height: 24),
-
-            const Text(
-              "Description",
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: const Color(0xFF0D1B3D),
-              ),
-            ),
-            const SizedBox(height: 8),
-
-            Card(
-              color: Colors.white,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-                side: const BorderSide(color: Color(0x1A2E6BFF)),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Text(
-                  classData['description'] ?? "No description provided",
-                  style: const TextStyle(
-                    fontSize: 15,
-                    color: Color(0xFF5C6B8C),
+                const Text(
+                  "Description",
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: const Color(0xFF0D1B3D),
                   ),
                 ),
-              ),
+                const SizedBox(height: 8),
+
+                Card(
+                  color: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    side: const BorderSide(color: Color(0x1A2E6BFF)),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Text(
+                      classData['description'] ?? "No description provided",
+                      style: const TextStyle(
+                        fontSize: 15,
+                        color: Color(0xFF5C6B8C),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );
@@ -2755,12 +3139,14 @@ class _PblListSheet extends StatelessWidget {
 
 class _MiniProjectsScreen extends StatefulWidget {
   final String classId;
+  final String? className;
   final String userId;
   final Function(BuildContext, String, Map<String, dynamic>, String)
   onSelectMiniProject;
 
   const _MiniProjectsScreen({
     required this.classId,
+    this.className,
     required this.userId,
     required this.onSelectMiniProject,
   });
@@ -2793,82 +3179,83 @@ class _MiniProjectsScreenState extends State<_MiniProjectsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final currentClassName = widget.className ?? 'Class';
     return Scaffold(
       backgroundColor: const Color(0xFFF4F8FF),
-      appBar: AppBar(
-        backgroundColor: const Color(0xFFF4F8FF),
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(
-            Icons.arrow_back_ios_new_rounded,
-            color: const Color(0xFF0D1B3D),
-          ),
-          onPressed: () => Navigator.pop(context),
-        ),
-        title: const Text(
-          "Mini Projects",
-          style: TextStyle(
-            color: const Color(0xFF0D1B3D),
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        centerTitle: true,
-      ),
-      // 1. Fetch all PBLs for this class
-      body: StreamBuilder<QuerySnapshot>(
-        stream: FirebaseFirestore.instance
-            .collection('classes')
-            .doc(widget.classId)
-            .collection('PBL')
-            .orderBy('createdAt', descending: true)
-            .snapshots(),
-        builder: (context, pblSnapshot) {
-          if (pblSnapshot.connectionState == ConnectionState.waiting) {
-            return const Center(
-              child: CcLoadingAnimation(color: Color(0xFFA5B2C8)),
-            );
-          }
+      body: SafeArea(
+        child: Column(
+          children: [
+            CCBreadcrumbBar(
+              items: [
+                CCBreadcrumbItem(label: 'Classes'),
+                CCBreadcrumbItem(label: currentClassName),
+                CCBreadcrumbItem(label: 'PBL Projects'),
+                CCBreadcrumbItem(label: 'Mini Projects'),
+              ],
+            ),
+            Expanded(
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 1000),
+                  child: StreamBuilder<QuerySnapshot>(
+                    stream: FirebaseFirestore.instance
+                        .collection('classes')
+                        .doc(widget.classId)
+                        .collection('PBL')
+                        .orderBy('createdAt', descending: true)
+                        .snapshots(),
+                    builder: (context, pblSnapshot) {
+                      if (pblSnapshot.connectionState == ConnectionState.waiting) {
+                        return const Center(
+                          child: CcLoadingAnimation(color: Color(0xFFA5B2C8)),
+                        );
+                      }
 
-          if (!pblSnapshot.hasData || pblSnapshot.data!.docs.isEmpty) {
-            return const Center(
-              child: Text(
-                "No mini projects available yet",
-                style: TextStyle(color: Color(0xFF7A89A8), fontSize: 16),
+                      if (!pblSnapshot.hasData || pblSnapshot.data!.docs.isEmpty) {
+                        return const Center(
+                          child: Text(
+                            "No mini projects available yet",
+                            style: TextStyle(color: Color(0xFF7A89A8), fontSize: 16),
+                          ),
+                        );
+                      }
+
+                      final pblDocs = pblSnapshot.data!.docs;
+
+                      // 2. Check for active selection across these PBLs
+                      return FutureBuilder<Map<String, dynamic>?>(
+                        future: _findActiveSelection(pblDocs),
+                        builder: (context, selectionSnapshot) {
+                          if (selectionSnapshot.connectionState ==
+                              ConnectionState.waiting) {
+                            return const Center(
+                              child: CcLoadingAnimation(color: Color(0xFFA5B2C8)),
+                            );
+                          }
+
+                          final activeSelection = selectionSnapshot.data;
+
+                          // 🔹 SCENARIO A: PROJECT ALREADY SELECTED
+                          if (activeSelection != null) {
+                            return _buildSelectedView(
+                              context,
+                              activeSelection['selectionData'],
+                              activeSelection['pblId'],
+                              activeSelection['pblData'],
+                            );
+                          }
+
+                          // 🔹 SCENARIO B: NO SELECTION -> SHOW ALL AVAILABLE OPTIONS
+                          return _buildAvailableProjectsList(pblDocs);
+                        },
+                      );
+                    },
+                  ),
+                ),
               ),
-            );
-          }
-
-          final pblDocs = pblSnapshot.data!.docs;
-
-          // 2. Check for active selection across these PBLs
-          return FutureBuilder<Map<String, dynamic>?>(
-            future: _findActiveSelection(pblDocs),
-            builder: (context, selectionSnapshot) {
-              if (selectionSnapshot.connectionState ==
-                  ConnectionState.waiting) {
-                return const Center(
-                  child: CcLoadingAnimation(color: Color(0xFFA5B2C8)),
-                );
-              }
-
-              final activeSelection = selectionSnapshot.data;
-
-              // 🔹 SCENARIO A: PROJECT ALREADY SELECTED
-              if (activeSelection != null) {
-                return _buildSelectedView(
-                  context,
-                  activeSelection['selectionData'],
-                  activeSelection['pblId'],
-                  activeSelection['pblData'],
-                );
-              }
-
-              // 🔹 SCENARIO B: NO SELECTION -> SHOW ALL AVAILABLE OPTIONS
-              return _buildAvailableProjectsList(pblDocs);
-            },
-          );
-        },
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -2946,6 +3333,7 @@ class _MiniProjectsScreenState extends State<_MiniProjectsScreen> {
                         MaterialPageRoute(
                           builder: (_) => StudentMiniProjectDetailScreen(
                             classId: widget.classId,
+                            className: widget.className,
                             pblId: pblId,
                             studentId: widget.userId,
                             selectionData: selectedData,
@@ -3146,133 +3534,133 @@ class _MiniProjectsScreenState extends State<_MiniProjectsScreen> {
    ============================================================ */
 class _PblProjectsScreen extends StatelessWidget {
   final String classId;
+  final String? className;
   final String userId;
 
-  const _PblProjectsScreen({required this.classId, required this.userId});
+  const _PblProjectsScreen({
+    required this.classId,
+    this.className,
+    required this.userId,
+  });
 
   @override
   Widget build(BuildContext context) {
+    final currentClassName = className ?? 'Class';
     return Scaffold(
       backgroundColor: const Color(0xFFF4F8FF),
-      appBar: AppBar(
-        backgroundColor: const Color(0xFFF4F8FF),
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(
-            Icons.arrow_back_ios_new_rounded,
-            color: const Color(0xFF0D1B3D),
-          ),
-          onPressed: () => Navigator.pop(context),
-        ),
-        title: const Text(
-          "My PBL Projects",
-          style: TextStyle(
-            color: const Color(0xFF0D1B3D),
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        centerTitle: true,
-      ),
-      body: StreamBuilder<QuerySnapshot>(
-        stream: FirebaseFirestore.instance
-            .collection('classes')
-            .doc(classId)
-            .collection('PBL')
-            .orderBy('createdAt', descending: true)
-            .snapshots(),
-        builder: (context, snapshot) {
-          if (!snapshot.hasData) {
-            return const Center(
-              child: CcLoadingAnimation(color: Color(0xFFA5B2C8)),
-            );
-          }
-
-          if (snapshot.data!.docs.isEmpty) {
-            return const Center(
-              child: Text(
-                "No PBL projects assigned yet",
-                style: TextStyle(color: Color(0xFF5C6B8C), fontSize: 16),
-              ),
-            );
-          }
-
-          final docs = snapshot.data!.docs;
-          final assignedPbls = <Map<String, dynamic>>[];
-
-          // Filter for assigned PBLs
-          for (var doc in docs) {
-            final data = doc.data() as Map<String, dynamic>;
-            final studentAssignments =
-                data['studentAssignments'] as List<dynamic>? ?? [];
-
-            bool isAssigned = false;
-            Map<String, dynamic>? pairInfo;
-
-            for (var assignment in studentAssignments) {
-              final students = assignment['students'] as List<dynamic>? ?? [];
-              for (var student in students) {
-                if (student is Map && student['uid'] == userId) {
-                  isAssigned = true;
-                  pairInfo = assignment;
-                  break;
-                }
-              }
-              if (isAssigned) break;
-            }
-
-            if (isAssigned) {
-              assignedPbls.add({
-                'id': doc.id,
-                'data': data,
-                'pairInfo': pairInfo,
-              });
-            }
-          }
-
-          if (assignedPbls.isEmpty) {
-            return const Center(
-              child: Text(
-                "No PBL projects assigned to you yet",
-                style: TextStyle(color: Color(0xFF5C6B8C), fontSize: 16),
-              ),
-            );
-          }
-
-          return SingleChildScrollView(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              children: [
-                ListView.builder(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  itemCount: assignedPbls.length,
-                  itemBuilder: (context, index) {
-                    final pblInfo = assignedPbls[index];
-                    return Column(
-                      children: [
-                        _PblSubmissionCard(
-                          classId: classId,
-                          pblId: pblInfo['id'],
-                          pblData: pblInfo['data'],
-                          pairInfo: pblInfo['pairInfo'],
-                        ),
-                        const SizedBox(height: 12),
-                        // _PblMiniProjectStatus(
-                        //   classId: classId,
-                        //   pblId: pblInfo['id'],
-                        //   pblData: pblInfo['data'],
-                        //   studentId: userId,
-                        // ),
-                        // const SizedBox(height: 24),
-                      ],
-                    );
-                  },
-                ),
+      body: SafeArea(
+        child: Column(
+          children: [
+            CCBreadcrumbBar(
+              items: [
+                CCBreadcrumbItem(label: 'Classes'),
+                CCBreadcrumbItem(label: currentClassName),
+                CCBreadcrumbItem(label: 'PBL Projects'),
               ],
             ),
-          );
-        },
+            Expanded(
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 1000),
+                  child: StreamBuilder<QuerySnapshot>(
+                    stream: FirebaseFirestore.instance
+                        .collection('classes')
+                        .doc(classId)
+                        .collection('PBL')
+                        .orderBy('createdAt', descending: true)
+                        .snapshots(),
+                    builder: (context, snapshot) {
+                      if (!snapshot.hasData) {
+                        return const Center(
+                          child: CcLoadingAnimation(color: Color(0xFFA5B2C8)),
+                        );
+                      }
+
+                      if (snapshot.data!.docs.isEmpty) {
+                        return const Center(
+                          child: Text(
+                            "No PBL projects assigned yet",
+                            style: TextStyle(color: Color(0xFF5C6B8C), fontSize: 16),
+                          ),
+                        );
+                      }
+
+                      final docs = snapshot.data!.docs;
+                      final assignedPbls = <Map<String, dynamic>>[];
+
+                      // Filter for assigned PBLs
+                      for (var doc in docs) {
+                        final data = doc.data() as Map<String, dynamic>;
+                        final studentAssignments =
+                            data['studentAssignments'] as List<dynamic>? ?? [];
+
+                        bool isAssigned = false;
+                        Map<String, dynamic>? pairInfo;
+
+                        for (var assignment in studentAssignments) {
+                          final students = assignment['students'] as List<dynamic>? ?? [];
+                          for (var student in students) {
+                            if (student is Map && student['uid'] == userId) {
+                              isAssigned = true;
+                              pairInfo = assignment;
+                              break;
+                            }
+                          }
+                          if (isAssigned) break;
+                        }
+
+                        if (isAssigned) {
+                          assignedPbls.add({
+                            'id': doc.id,
+                            'data': data,
+                            'pairInfo': pairInfo,
+                          });
+                        }
+                      }
+
+                      if (assignedPbls.isEmpty) {
+                        return const Center(
+                          child: Text(
+                            "No PBL projects assigned to you yet",
+                            style: TextStyle(color: Color(0xFF5C6B8C), fontSize: 16),
+                          ),
+                        );
+                      }
+
+                      return SingleChildScrollView(
+                        padding: const EdgeInsets.all(16),
+                        child: Column(
+                          children: [
+                            ListView.builder(
+                              shrinkWrap: true,
+                              physics: const NeverScrollableScrollPhysics(),
+                              itemCount: assignedPbls.length,
+                              itemBuilder: (context, index) {
+                                final pblInfo = assignedPbls[index];
+                                return Column(
+                                  children: [
+                                    _PblSubmissionCard(
+                                      classId: classId,
+                                      className: className,
+                                      pblId: pblInfo['id'],
+                                      pblData: pblInfo['data'],
+                                      pairInfo: pblInfo['pairInfo'],
+                                    ),
+                                    const SizedBox(height: 12),
+                                  ],
+                                );
+                              },
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -3315,12 +3703,14 @@ Widget _infoTile(String label, String? value) {
 
 class _PblSubmissionCard extends StatelessWidget {
   final String classId;
+  final String? className;
   final String pblId;
   final Map<String, dynamic> pblData;
   final Map<String, dynamic>? pairInfo;
 
   const _PblSubmissionCard({
     required this.classId,
+    this.className,
     required this.pblId,
     required this.pblData,
     required this.pairInfo,
@@ -3442,12 +3832,14 @@ class _PblSubmissionCard extends StatelessWidget {
 
 class _PblMiniProjectStatus extends StatelessWidget {
   final String classId;
+  final String? className;
   final String pblId;
   final Map<String, dynamic> pblData;
   final String studentId;
 
   const _PblMiniProjectStatus({
     required this.classId,
+    this.className,
     required this.pblId,
     required this.pblData,
     required this.studentId,
@@ -3508,6 +3900,7 @@ class _PblMiniProjectStatus extends StatelessWidget {
                       MaterialPageRoute(
                         builder: (_) => StudentMiniProjectDetailScreen(
                           classId: classId,
+                          className: className,
                           pblId: pblId,
                           studentId: studentId,
                           selectionData: selectionData,
@@ -3552,7 +3945,7 @@ class _PblMiniProjectStatus extends StatelessWidget {
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
                             style: const TextStyle(
-                              color: Colors.white60,
+                              color: Color(0xFF5C6B8C),
                               fontSize: 13,
                             ),
                           ),

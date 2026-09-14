@@ -1,16 +1,21 @@
-import 'dart:io';
+// import 'dart:io'; // removed for web compatibility
 import 'package:flutter/material.dart';
 import 'package:demo/widgets/ui/cc_loading_animation.dart';
+import 'dart:typed_data';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:demo/services/groq_service.dart';
 import 'package:file_picker/file_picker.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:path/path.dart' as path;
+// import 'package:supabase_flutter/supabase_flutter.dart'; // removed unused
+// import 'package:path/path.dart' as path; // removed unused
 import 'package:demo/widgets/ui/cc_decorated_background.dart';
 import 'package:demo/services/pbl_supabase_client.dart';
+import 'package:demo/theme/app_colors.dart';
+import 'package:demo/theme/app_spacing.dart';
+import 'package:demo/widgets/cc_breadcrumb_bar.dart';
 
 class StudentMiniProjectDetailScreen extends StatefulWidget {
   final String classId;
+  final String? className;
   final String pblId;
   final String studentId;
   final Map<String, dynamic> selectionData;
@@ -19,6 +24,7 @@ class StudentMiniProjectDetailScreen extends StatefulWidget {
   const StudentMiniProjectDetailScreen({
     super.key,
     required this.classId,
+    this.className,
     required this.pblId,
     required this.studentId,
     required this.selectionData,
@@ -173,7 +179,7 @@ class _StudentMiniProjectDetailScreenState
     });
 
     try {
-      final fileBytes = _selectedFile!.bytes;
+      final Uint8List fileBytes = _selectedFile!.bytes!;
       final fileName = _selectedFile!.name;
       // If bytes are null (e.g. on mobile sometimes if not read to stream), try path
       // Web always has bytes. Mac/Windows usually path.
@@ -184,18 +190,10 @@ class _StudentMiniProjectDetailScreenState
       final storagePath =
           'mini_projects/${widget.classId}/${widget.pblId}/${widget.studentId}/$uniqueName';
 
-      // Upload
-      if (fileBytes != null) {
-        await supabase.storage
-            .from('PBL - PROJECTS')
-            .uploadBinary(storagePath, fileBytes);
-      } else if (_selectedFile!.path != null) {
-        await supabase.storage
-            .from('PBL - PROJECTS')
-            .upload(storagePath, File(_selectedFile!.path!));
-      } else {
-        throw Exception("Cannot read file data");
-      }
+      // Upload (web: always use bytes)
+      await supabase.storage
+          .from('PBL - PROJECTS')
+          .uploadBinary(storagePath, fileBytes);
 
       // Get Public URL
       final publicUrl = supabase.storage
@@ -253,28 +251,39 @@ class _StudentMiniProjectDetailScreenState
     final completed = _steps.where((s) => s['completed'] == true).length;
     final progress = total == 0 ? 0.0 : completed / total;
 
+    final currentClassName = widget.className ?? 'Class';
+
     return Scaffold(
-      backgroundColor: const Color(0xFFF4F8FF),
-      appBar: AppBar(
-        foregroundColor: const Color(0xFF0D1B3D),
-        title: const Text(
-          'Project Guidelines',
-          style: TextStyle(color: Color(0xFF0D1B3D)),
-        ),
-        backgroundColor: const Color(0xFFF4F8FF),
-        leading: IconButton(
-          icon: const Icon(
-            Icons.arrow_back_ios_new_rounded,
-            color: Color(0xFF0D1B3D),
-          ),
-          onPressed: () {
-            Navigator.pop(context);
-          },
-        ),
-        elevation: 0,
-        centerTitle: true,
-      ),
-      body: _isLoading
+      backgroundColor: AppColors.background,
+      body: SafeArea(
+        child: Column(
+          children: [
+            CCBreadcrumbBar(
+              items: [
+                BreadcrumbItem(
+                  label: 'Classes',
+                  onTap: () {
+                    Navigator.of(context).popUntil((route) => route.isFirst);
+                  },
+                ),
+                BreadcrumbItem(
+                  label: currentClassName,
+                  onTap: () {
+                    Navigator.of(context).pop();
+                  },
+                ),
+                BreadcrumbItem(
+                  label: 'PBL Projects',
+                  onTap: () {
+                    Navigator.of(context).pop();
+                  },
+                ),
+                const BreadcrumbItem(label: 'Mini Projects'),
+                BreadcrumbItem(label: widget.selectionData['title'] ?? 'Guidelines'),
+              ],
+            ),
+            Expanded(
+              child: _isLoading
           ? const Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -316,7 +325,10 @@ class _StudentMiniProjectDetailScreenState
               ),
             )
           : CcDecoratedBackground(
-              child: Column(
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 1000),
+                  child: Column(
                 children: [
                   // Header Info
                   Container(
@@ -648,6 +660,12 @@ class _StudentMiniProjectDetailScreenState
                 ],
               ),
             ),
-    );
-  }
+          ),
+        ),
+      ),
+    ],
+  ),
+),
+);
+}
 }

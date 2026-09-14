@@ -1,12 +1,12 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:google_sign_in/google_sign_in.dart';
+import 'package:flutter/foundation.dart';
+import 'package:demo/services/_google_sign_in_stub.dart' if (dart.library.io) 'package:google_sign_in/google_sign_in.dart';
 
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _db = FirebaseFirestore.instance;
   final GoogleSignIn _googleSignIn = GoogleSignIn();
-
   // ---------------- EMAIL AUTH (Already OK) ----------------
 
   Future<User?> registerWithEmail(String email, String password) async {
@@ -35,50 +35,43 @@ class AuthService {
     }
   }
 
-  // ---------------- GOOGLE SIGN IN (IMPORTANT) ----------------
-
+  // Real Google Sign‑In implementation (works on Web, Android, iOS).
   Future<User?> signInWithGoogle({required String role}) async {
     try {
-      print("➡️ Starting Google Sign-In for role: $role");
-      await _googleSignIn.signOut();
-      final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
-
-      if (googleUser == null) {
-        print("❌ Google Sign-In cancelled by user");
-        return null;
+      if (kIsWeb) {
+        // Web uses a popup sign‑in flow.
+        final GoogleAuthProvider googleProvider = GoogleAuthProvider();
+        final UserCredential cred = await _auth.signInWithPopup(googleProvider);
+        final User? user = cred.user;
+        if (user != null) {
+          await _storeUserData(user, role);
+        }
+        return user;
+      } else {
+        // Mobile (Android / iOS) uses the native GoogleSignIn plugin.
+        await _googleSignIn.signOut();
+        final dynamic googleUser = await _googleSignIn.signIn();
+        if (googleUser == null) {
+          // User cancelled the sign‑in flow.
+          return null;
+        }
+        final dynamic googleAuth = await googleUser.authentication;
+        final credential = GoogleAuthProvider.credential(
+          accessToken: googleAuth.accessToken,
+          idToken: googleAuth.idToken,
+        );
+        final UserCredential userCred = await _auth.signInWithCredential(credential);
+        final User? user = userCred.user;
+        if (user != null) {
+          await _storeUserData(user, role);
+        }
+        return user;
       }
-
-      print("✅ Google account selected: ${googleUser.email}");
-
-      final GoogleSignInAuthentication googleAuth =
-          await googleUser.authentication;
-
-      print("🔑 Google Auth Tokens received");
-
-      final credential = GoogleAuthProvider.credential(
-        accessToken: googleAuth.accessToken,
-        idToken: googleAuth.idToken,
-      );
-
-      UserCredential userCred = await _auth.signInWithCredential(credential);
-
-      User user = userCred.user!;
-      print("✅ Firebase Auth success: UID = ${user.uid}");
-
-      await _storeUserData(user, role);
-
-      print("💾 User data stored in Firestore as $role");
-
-      return user;
     } catch (e) {
-      print("🔥 Google Sign-In Error: $e");
+      debugPrint('❌ Google Sign‑In error: $e');
       return null;
     }
   }
-
-  // ---------------- PROFILE COMPLETION CHECK ----------------
-  // (Previously parent-only, now checks ALL onboarding fields)
-
   Future<bool> isParentDetailsFilled(String uid) async {
     final doc = await _db.collection('students').doc(uid).get();
 
@@ -191,44 +184,54 @@ class AuthService {
   // (ONLY ADDITIONS: student fields initialized as null)
 
   Future<void> _storeUserData(User user, String role) async {
+    // Check if user already exists in either collection to avoid overwriting existing role
+    final teacherDoc = await _db.collection('teachers').doc(user.uid).get();
+    final studentDoc = await _db.collection('students').doc(user.uid).get();
+
+    if (teacherDoc.exists) {
+      await _db.collection('teachers').doc(user.uid).set({
+        'name': user.displayName ?? '',
+        'email': user.email ?? '',
+        'photoUrl': user.photoURL ?? '',
+      }, SetOptions(merge: true));
+      return;
+    }
+
+    if (studentDoc.exists) {
+      await _db.collection('students').doc(user.uid).set({
+        'name': user.displayName ?? '',
+        'email': user.email ?? '',
+        'photoUrl': user.photoURL ?? '',
+      }, SetOptions(merge: true));
+      return;
+    }
+
+    // Brand new user: initialize full document for chosen role
     final docRef = role == 'student'
         ? _db.collection('students').doc(user.uid)
         : _db.collection('teachers').doc(user.uid);
 
-    final doc = await docRef.get();
-
-    // ✅ FIRST TIME STUDENT (UNCHANGED LOGIC + ADDED FIELDS)
-    if (!doc.exists && role == 'student') {
+    if (role == 'student') {
       await docRef.set({
-        // 🔑 basic identity (YOUR CODE)
         'uid': user.uid,
         'name': user.displayName ?? '',
         'email': user.email ?? '',
         'photoUrl': user.photoURL ?? '',
         'role': role,
-
-        // 🔽 ADDED: student one-time fields
         'studentRollNo': null,
         'studentSem': null,
         'studentType': null,
         'studentClass': null,
         'studentDepartment': null,
         'collegeSchoolName': null,
-
-        // 👨‍👩‍👧 parent (YOUR CODE)
         'parentEmail': null,
         'parentPhoneNumber': null,
-
-        // ⏱ system (YOUR CODE)
         'createdAt': FieldValue.serverTimestamp(),
       });
-
-      print("🆕 New student document created with full schema");
       return;
     }
 
-    // ✅ FIRST TIME TEACHER (UNCHANGED)
-    if (!doc.exists && role == 'teacher') {
+    if (role == 'teacher') {
       await docRef.set({
         'uid': user.uid,
         'name': user.displayName ?? '',
@@ -239,19 +242,8 @@ class AuthService {
         'collegeName': null,
         'createdAt': FieldValue.serverTimestamp(),
       });
-
-      print("🆕 New teacher document created");
       return;
     }
-
-    // ♻️ EXISTING USER → SAFE UPDATE (UNCHANGED)
-    await docRef.set({
-      'name': user.displayName ?? '',
-      'email': user.email ?? '',
-      'photoUrl': user.photoURL ?? '',
-    }, SetOptions(merge: true));
-
-    print("♻️ Existing $role document updated safely");
   }
 
   // ---------------- SIGN OUT ----------------
@@ -260,16 +252,12 @@ class AuthService {
     try {
       await _auth.signOut();
       await _googleSignIn.signOut();
-
       try {
         await _googleSignIn.disconnect();
-      } catch (_) {
-        print("ℹ️ Google disconnect skipped (already disconnected)");
-      }
-
-      print("✅ User fully signed out");
+      } catch (_) {}
+      debugPrint('✅ User signed out');
     } catch (e) {
-      print("❌ Firebase sign out error: $e");
+      debugPrint('❌ Sign out error: $e');
     }
   }
 

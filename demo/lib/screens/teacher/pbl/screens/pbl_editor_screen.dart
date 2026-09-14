@@ -3,17 +3,20 @@ import 'package:demo/screens/teacher/pbl/services/gemini_service.dart';
 import 'package:flutter/material.dart';
 import 'package:demo/widgets/ui/cc_loading_animation.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:demo/widgets/cc_breadcrumb_bar.dart';
 import 'publish_success_screen.dart';
 
 class PblEditorScreen extends StatefulWidget {
   final PblProject project;
   final String? classId;
+  final String? className;
   final String? pblId; // If provided, we are editing an existing project
 
   const PblEditorScreen({
     super.key,
     required this.project,
     this.classId,
+    this.className,
     this.pblId,
   });
 
@@ -99,6 +102,492 @@ class _PblEditorScreenState extends State<PblEditorScreen> {
     final isDetailsEmpty =
         _learningObjectives.isEmpty && _milestones.isEmpty && _rubric.isEmpty;
 
+    final isDesktop = MediaQuery.of(context).size.width >= 800;
+
+    if (isDesktop) {
+      return _buildDesktopLayout(isEditing, isDetailsEmpty);
+    }
+
+    return _buildMobileLayout(isEditing, isDetailsEmpty);
+  }
+
+  Widget _buildDesktopLayout(bool isEditing, bool isDetailsEmpty) {
+    final classTitle = widget.className ?? 'Class';
+    return Scaffold(
+      backgroundColor: const Color(0xFFF8FAFC),
+      body: Column(
+        children: [
+          CCBreadcrumbBar(
+            items: [
+              BreadcrumbItem(
+                label: 'Classes',
+                icon: Icons.school_rounded,
+                onTap: () => Navigator.of(context).popUntil((route) => route.isFirst),
+              ),
+              BreadcrumbItem(
+                label: classTitle,
+                onTap: () => Navigator.of(context).pop(),
+              ),
+              BreadcrumbItem(
+                label: 'PBL Projects',
+                onTap: () => Navigator.of(context).pop(),
+              ),
+              BreadcrumbItem(
+                label: isEditing ? 'Edit Project Plan' : 'Review & Publish',
+              ),
+            ],
+            badgeText: isEditing ? null : 'Step 4 of 4',
+          ),
+          Expanded(
+            child: _buildDesktopContent(isEditing, isDetailsEmpty),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDesktopContent(bool isEditing, bool isDetailsEmpty) {
+    return Column(
+      children: [
+        Expanded(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(40),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 900),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    isEditing ? 'Edit Project Plan' : 'Review & Publish Project',
+                    style: const TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xFF1E293B),
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  if (_isGenerating)
+                    Container(
+                      margin: const EdgeInsets.only(bottom: 24),
+                      padding: const EdgeInsets.all(20),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF1F5F9),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: const Color(0xFF8B5CF6).withValues(alpha: 0.3)),
+                      ),
+                      child: Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF8B5CF6).withValues(alpha: 0.1),
+                              shape: BoxShape.circle,
+                            ),
+                            child: const CcLoadingAnimation(color: Color(0xFF8B5CF6)),
+                          ),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text(
+                                  "AI is generating project details...",
+                                  style: TextStyle(
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w600,
+                                    color: Color(0xFF1E293B),
+                                  ),
+                                ),
+                                Text(
+                                  "This may take a moment. Please wait.",
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    color: const Color(0xFF64748B),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                  // Title
+                  const Text(
+                    'Project Title',
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xFF64748B),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  TextFormField(
+                    controller: _titleController,
+                    style: const TextStyle(
+                      color: Color(0xFF1E293B),
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
+                    decoration: InputDecoration(
+                      filled: true,
+                      fillColor: Colors.white,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: const Color(0xFFE2E8F0)),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: const Color(0xFFE2E8F0)),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: const BorderSide(color: Color(0xFF8B5CF6), width: 2),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 32),
+
+                  // Problem Statement
+                  const Text(
+                    'Problem Statement',
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xFF64748B),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  TextFormField(
+                    controller: _problemController,
+                    maxLines: 4,
+                    style: const TextStyle(color: Color(0xFF1E293B), fontSize: 14),
+                    decoration: InputDecoration(
+                      filled: true,
+                      fillColor: Colors.white,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: const Color(0xFFE2E8F0)),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: const Color(0xFFE2E8F0)),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: const BorderSide(color: Color(0xFF8B5CF6), width: 2),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 32),
+
+                  // Learning Objectives
+                  _buildDesktopSection('Learning Objectives', _learningObjectives.isEmpty),
+                  if (_learningObjectives.isEmpty)
+                    _buildDesktopEmptyState('No objectives generated yet.')
+                  else
+                    ..._learningObjectives.map((obj) => _buildDesktopObjectiveCard(obj)),
+                  const SizedBox(height: 32),
+
+                  // Milestones
+                  _buildDesktopSection('Project Milestones', _milestones.isEmpty),
+                  if (_milestones.isEmpty)
+                    _buildDesktopEmptyState('No milestones generated yet.')
+                  else
+                    _buildDesktopMilestoneStepper(),
+                  const SizedBox(height: 32),
+
+                  // Rubric
+                  _buildDesktopSection('Assessment Rubric', _rubric.isEmpty),
+                  if (_rubric.isEmpty)
+                    _buildDesktopEmptyState('No rubric generated yet.')
+                  else
+                    _buildDesktopRubricTable(),
+                  const SizedBox(height: 48),
+
+                  // Save Button
+                  SizedBox(
+                    width: double.infinity,
+                    child: FilledButton(
+                      onPressed: _isSaving ? null : () => _saveProject(context),
+                      style: FilledButton.styleFrom(
+                        backgroundColor: const Color(0xFF8B5CF6),
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.all(20),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: _isSaving
+                          ? const CcLoadingAnimation(color: Colors.white)
+                          : Text(
+                              isEditing ? 'Save Changes' : 'Publish Project to Class',
+                              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                            ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+        _buildDesktopActionBar(isEditing, isDetailsEmpty),
+      ],
+    );
+  }
+
+  Widget _buildDesktopSection(String title, bool isEmpty) {
+    return Row(
+      children: [
+        Container(
+          width: 4,
+          height: 20,
+          decoration: BoxDecoration(
+            color: const Color(0xFF8B5CF6),
+            borderRadius: BorderRadius.circular(2),
+          ),
+        ),
+        const SizedBox(width: 12),
+        Text(
+          title,
+          style: const TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w700,
+            color: Color(0xFF1E293B),
+          ),
+        ),
+        const SizedBox(width: 12),
+        if (isEmpty)
+          IconButton(
+            onPressed: _generateDetails,
+            icon: const Icon(Icons.auto_awesome, size: 18, color: Color(0xFF8B5CF6)),
+            tooltip: 'Generate with AI',
+          ),
+      ],
+    );
+  }
+
+  Widget _buildDesktopEmptyState(String message) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF1F5F9),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+      ),
+      child: Center(
+        child: Text(
+          message,
+          style: TextStyle(color: const Color(0xFF64748B), fontSize: 14),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDesktopObjectiveCard(String objective) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF8B5CF6).withValues(alpha: 0.04),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 24,
+            height: 24,
+            decoration: BoxDecoration(
+              color: Colors.green.withValues(alpha: 0.1),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(Icons.check, size: 14, color: Colors.green),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              objective,
+              style: const TextStyle(fontSize: 14, color: Color(0xFF1E293B)),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDesktopMilestoneStepper() {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+      ),
+      child: Column(
+        children: _milestones.asMap().entries.map((entry) {
+          final index = entry.key;
+          final milestone = entry.value;
+          return Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              children: [
+                Container(
+                  width: 32,
+                  height: 32,
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(colors: [Color(0xFF8B5CF6), Color(0xFFA78BFA)]),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Center(
+                    child: Text(
+                      '${index + 1}',
+                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Text(
+                    milestone,
+                    style: const TextStyle(fontSize: 14, color: Color(0xFF1E293B)),
+                  ),
+                ),
+              ],
+            ),
+          );
+        }).toList(),
+      ),
+    );
+  }
+
+  Widget _buildDesktopRubricTable() {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+      ),
+      child: Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: const BoxDecoration(
+              color: Color(0xFFF1F5F9),
+              borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
+            ),
+            child: Row(
+              children: [
+                Expanded(flex: 3, child: const Text('Criteria', style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF1E293B)))),
+                Expanded(flex: 1, child: const Text('Weight', style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF1E293B)))),
+              ],
+            ),
+          ),
+          ..._rubric.map((r) => Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(flex: 3, child: Text(r['criteria'] ?? 'Unknown', style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15, color: Color(0xFF1E293B)))),
+                    Expanded(flex: 1, child: Text('${r['weight']}%', style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF8B5CF6)))),
+                  ],
+                ),
+                if (r['descriptor'] != null) ...[
+                  const SizedBox(height: 12),
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.green.withValues(alpha: 0.05),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Colors.green.withValues(alpha: 0.2)),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.star, size: 16, color: Colors.green),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            'Exemplary: ${r['descriptor']}',
+                            style: TextStyle(fontSize: 13, color: const Color(0xFF475569), fontStyle: FontStyle.italic),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+                const Divider(height: 24),
+              ],
+            ),
+          )),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDesktopActionBar(bool isEditing, bool isDetailsEmpty) {
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF8B5CF6).withValues(alpha: 0.08),
+            blurRadius: 20,
+            offset: const Offset(0, -4),
+          ),
+        ],
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          if (isDetailsEmpty && !_isGenerating)
+            ElevatedButton.icon(
+              onPressed: _generateDetails,
+              icon: const Icon(Icons.auto_awesome, color: Color(0xFF8B5CF6)),
+              label: const Text('Generate Details with AI', style: TextStyle(color: Color(0xFF8B5CF6))),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.white,
+                side: const BorderSide(color: Color(0xFF8B5CF6)),
+              ),
+            ),
+          if (isDetailsEmpty && !_isGenerating) const SizedBox(width: 16),
+          ElevatedButton(
+            onPressed: _isSaving ? null : () => _saveProject(context),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF8B5CF6),
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            child: _isSaving
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                  )
+                : Text(
+                    isEditing ? 'Save Changes' : 'Publish Project to Class',
+                    style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+                  ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMobileLayout(bool isEditing, bool isDetailsEmpty) {
     return Scaffold(
       appBar: AppBar(
         title: Text(isEditing ? 'Edit Project Plan' : 'Review Project Plan'),

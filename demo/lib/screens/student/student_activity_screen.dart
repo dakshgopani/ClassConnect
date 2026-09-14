@@ -580,36 +580,300 @@ class _StudentActivityScreenState extends State<StudentActivityScreen> {
   }
 
   Widget _buildContent() {
-    return ListView(
-      key: const ValueKey('activity-content'),
-      padding: const EdgeInsets.fromLTRB(20, 18, 20, 24),
-      children: [
-        _buildStatsRow(),
-        const SizedBox(height: 20),
-        Row(
-          children: [
-            const Expanded(
-              child: Text(
-                'Latest Activity',
-                style: TextStyle(
-                  color: Color(0xFF0D1B3D),
-                  fontSize: 18,
-                  fontWeight: FontWeight.w800,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isDesktop = constraints.maxWidth >= 800;
+
+        if (isDesktop) {
+          return Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 1200),
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 28,
+                  vertical: 24,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildStatsRow(),
+                    const SizedBox(height: 28),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          flex: 6,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  const Expanded(
+                                    child: Text(
+                                      'Latest Activity Stream',
+                                      style: TextStyle(
+                                        color: Color(0xFF0D1B3D),
+                                        fontSize: 20,
+                                        fontWeight: FontWeight.w800,
+                                      ),
+                                    ),
+                                  ),
+                                  Text(
+                                    '${_sortedAlerts.length} items',
+                                    style: const TextStyle(
+                                      color: Color(0xFF5C6B8C),
+                                      fontSize: 13,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 14),
+                              ...List.generate(
+                                _sortedAlerts.length,
+                                (index) =>
+                                    _buildAlertCard(_sortedAlerts[index], index),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 24),
+                        Expanded(
+                          flex: 4,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              _buildDesktopShortcutsCard(),
+                              const SizedBox(height: 20),
+                              _buildDesktopEnrolledClassesCard(),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
               ),
             ),
-            Text(
-              '${_sortedAlerts.length} items',
-              style: const TextStyle(color: Color(0xFF5C6B8C), fontSize: 12),
+          );
+        }
+
+        return ListView(
+          key: const ValueKey('activity-content'),
+          padding: const EdgeInsets.fromLTRB(20, 18, 20, 24),
+          children: [
+            _buildStatsRow(),
+            const SizedBox(height: 20),
+            Row(
+              children: [
+                const Expanded(
+                  child: Text(
+                    'Latest Activity',
+                    style: TextStyle(
+                      color: Color(0xFF0D1B3D),
+                      fontSize: 18,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ),
+                Text(
+                  '${_sortedAlerts.length} items',
+                  style: const TextStyle(
+                    color: Color(0xFF5C6B8C),
+                    fontSize: 12,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            ...List.generate(
+              _sortedAlerts.length,
+              (index) => _buildAlertCard(_sortedAlerts[index], index),
             ),
           ],
+        );
+      },
+    );
+  }
+
+  Widget _buildDesktopShortcutsCard() {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: const Color(0xFF2E6BFF).withValues(alpha: 0.12),
         ),
-        const SizedBox(height: 12),
-        ...List.generate(
-          _sortedAlerts.length,
-          (index) => _buildAlertCard(_sortedAlerts[index], index),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF2E6BFF).withValues(alpha: 0.06),
+            blurRadius: 18,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Quick Shortcuts',
+            style: TextStyle(
+              color: Color(0xFF0D1B3D),
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 14),
+          _shortcutTile(
+            icon: Icons.class_rounded,
+            title: 'Explore My Classes',
+            subtitle: 'Access assignments, syllabi & attendance',
+            color: const Color(0xFF2E6BFF),
+            onTap: () {},
+          ),
+          const SizedBox(height: 10),
+          _shortcutTile(
+            icon: Icons.forum_rounded,
+            title: 'Community Discussions',
+            subtitle: 'Ask questions or help your classmates',
+            color: const Color(0xFF10B981),
+            onTap: () {},
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _shortcutTile({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.06),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: color.withValues(alpha: 0.15)),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.15),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(icon, color: color, size: 20),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    color: Color(0xFF0D1B3D),
+                    fontWeight: FontWeight.w600,
+                    fontSize: 13.5,
+                  ),
+                ),
+                Text(
+                  subtitle,
+                  style: const TextStyle(
+                    color: Color(0xFF5C6B8C),
+                    fontSize: 11.5,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDesktopEnrolledClassesCard() {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: const Color(0xFF2E6BFF).withValues(alpha: 0.12),
         ),
-      ],
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF2E6BFF).withValues(alpha: 0.06),
+            blurRadius: 18,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                'Enrolled Classes',
+                style: TextStyle(
+                  color: Color(0xFF0D1B3D),
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              Text(
+                '${_classNames.length} active',
+                style: const TextStyle(
+                  color: Color(0xFF2E6BFF),
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          if (_classNames.isEmpty)
+            const Text(
+              'You have not joined any classes yet.',
+              style: TextStyle(color: Color(0xFF5C6B8C), fontSize: 13),
+            )
+          else
+            ..._classNames.entries.map(
+              (entry) => Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 8,
+                      height: 8,
+                      decoration: const BoxDecoration(
+                        color: Color(0xFF2E6BFF),
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        entry.value,
+                        style: const TextStyle(
+                          color: Color(0xFF0D1B3D),
+                          fontWeight: FontWeight.w500,
+                          fontSize: 13.5,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+        ],
+      ),
     );
   }
 

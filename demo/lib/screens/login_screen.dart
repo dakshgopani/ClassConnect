@@ -1,4 +1,4 @@
-import 'dart:ui';
+import 'dart:ui' show ImageFilter;
 
 import 'package:demo/screens/parent_details_screen.dart';
 import 'package:demo/screens/teacher_details_screen.dart';
@@ -6,6 +6,7 @@ import 'package:demo/services/auth_service.dart';
 import 'package:demo/widgets/ui/cc_button.dart';
 import 'package:demo/widgets/ui/cc_text_field.dart';
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:demo/screens/student_home.dart';
 import 'package:demo/screens/teacher_home.dart';
 
@@ -65,6 +66,36 @@ class LoginScreen extends StatelessWidget {
           SafeArea(
             child: LayoutBuilder(
               builder: (context, constraints) {
+                final isDesktop = constraints.maxWidth >= 840;
+
+                if (isDesktop) {
+                  return Center(
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 40,
+                        vertical: 24,
+                      ),
+                      child: ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 1100),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            Expanded(
+                              flex: 6,
+                              child: _buildDesktopHeroShowcase(),
+                            ),
+                            const SizedBox(width: 48),
+                            Expanded(
+                              flex: 5,
+                              child: _buildAuthCard(context),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  );
+                }
+
                 return SingleChildScrollView(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 16,
@@ -90,6 +121,170 @@ class LoginScreen extends StatelessWidget {
                   ),
                 );
               },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDesktopHeroShowcase() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.14),
+            borderRadius: BorderRadius.circular(30),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.25)),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 28,
+                height: 28,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(4),
+                  child: Image.asset(
+                    'assets/icons/logo.png',
+                    fit: BoxFit.contain,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 10),
+              const Text(
+                'ClassConnect',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 14,
+                  letterSpacing: 0.4,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 8,
+                  vertical: 2,
+                ),
+                decoration: BoxDecoration(
+                  color: _accent.withValues(alpha: 0.8),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Text(
+                  'Web Portal',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 24),
+        const Text(
+          'Empowering Modern Classrooms With Intelligent Collaboration.',
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 34,
+            fontWeight: FontWeight.w900,
+            letterSpacing: -0.8,
+            height: 1.25,
+          ),
+        ),
+        const SizedBox(height: 14),
+        Text(
+          'A unified digital workspace for educators and students. Experience AI-guided Project-Based Learning, streamlined coursework, and dynamic classroom communities.',
+          style: TextStyle(
+            color: Colors.white.withValues(alpha: 0.82),
+            fontSize: 15,
+            height: 1.5,
+          ),
+        ),
+        const SizedBox(height: 28),
+        _buildHeroFeatureCard(
+          icon: Icons.rocket_launch_rounded,
+          iconColor: const Color(0xFF3B82F6),
+          title: 'Project-Based Learning (PBL)',
+          description:
+              'AI milestone tracking, concept video pitch reviews, and peer pair submissions.',
+        ),
+        const SizedBox(height: 12),
+        _buildHeroFeatureCard(
+          icon: Icons.auto_awesome_motion_rounded,
+          iconColor: const Color(0xFF10B981),
+          title: 'Smart Course Management',
+          description:
+              'Automated syllabus parsing, assignments with attachments, and attendance analytics.',
+        ),
+        const SizedBox(height: 12),
+        _buildHeroFeatureCard(
+          icon: Icons.forum_rounded,
+          iconColor: const Color(0xFFF59E0B),
+          title: 'Vibrant Academic Community',
+          description:
+              'Classroom discussions, peer upvoting, and instant instructor guidance.',
+        ),
+      ],
+    );
+  }
+
+  Widget _buildHeroFeatureCard({
+    required IconData icon,
+    required Color iconColor,
+    required String title,
+    required String description,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.10),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.18)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: iconColor.withValues(alpha: 0.22),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(icon, color: Colors.white, size: 22),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                  ),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  description,
+                  style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.75),
+                    fontSize: 12.5,
+                    height: 1.35,
+                  ),
+                ),
+              ],
             ),
           ),
         ],
@@ -332,23 +527,65 @@ class LoginScreen extends StatelessWidget {
     );
   }
 
-  Future<void> _handleStudentGoogleLogin(BuildContext context) async {
-    final user = await _auth.signInWithGoogle(role: 'student');
+  Future<void> _routeGoogleUser(
+    BuildContext context,
+    dynamic user,
+    String fallbackRole,
+  ) async {
+    final teacherDoc = await FirebaseFirestore.instance
+        .collection('teachers')
+        .doc(user.uid)
+        .get();
+    final studentDoc = await FirebaseFirestore.instance
+        .collection('students')
+        .doc(user.uid)
+        .get();
 
-    if (!context.mounted || user == null) {
+    if (!context.mounted) return;
+
+    if (teacherDoc.exists) {
+      final hasTeacherDetails = await _auth.isTeacherDetailsFilled(user.uid);
+      if (!context.mounted) return;
+      if (hasTeacherDetails) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const TeacherHome()),
+        );
+      } else {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (_) => TeacherDetailsScreen(uid: user.uid),
+          ),
+        );
+      }
       return;
     }
 
-    final hasParentDetails = await _auth.isParentDetailsFilled(user.uid);
-
-    if (!context.mounted) {
+    if (studentDoc.exists) {
+      final hasParentDetails = await _auth.isParentDetailsFilled(user.uid);
+      if (!context.mounted) return;
+      if (hasParentDetails) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const StudentHome()),
+        );
+      } else {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (_) => ParentDetailsScreen(uid: user.uid),
+          ),
+        );
+      }
       return;
     }
 
-    if (hasParentDetails) {
+    // Brand new user: navigate to the details completion screen for selected role
+    if (fallbackRole == 'teacher') {
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (_) => StudentHome()),
+        MaterialPageRoute(builder: (_) => TeacherDetailsScreen(uid: user.uid)),
       );
     } else {
       Navigator.pushReplacement(
@@ -358,30 +595,16 @@ class LoginScreen extends StatelessWidget {
     }
   }
 
+  Future<void> _handleStudentGoogleLogin(BuildContext context) async {
+    final user = await _auth.signInWithGoogle(role: 'student');
+    if (!context.mounted || user == null) return;
+    await _routeGoogleUser(context, user, 'student');
+  }
+
   Future<void> _handleTeacherGoogleLogin(BuildContext context) async {
     final user = await _auth.signInWithGoogle(role: 'teacher');
-
-    if (!context.mounted || user == null) {
-      return;
-    }
-
-    final hasTeacherDetails = await _auth.isTeacherDetailsFilled(user.uid);
-
-    if (!context.mounted) {
-      return;
-    }
-
-    if (hasTeacherDetails) {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => TeacherHome()),
-      );
-    } else {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => TeacherDetailsScreen(uid: user.uid)),
-      );
-    }
+    if (!context.mounted || user == null) return;
+    await _routeGoogleUser(context, user, 'teacher');
   }
 }
 

@@ -5,11 +5,13 @@ import 'package:file_picker/file_picker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:intl/intl.dart';
+import '../../../widgets/cc_breadcrumb_bar.dart';
 
 class TeacherResourcesScreen extends StatefulWidget {
   final String classId;
+  final String? className;
 
-  const TeacherResourcesScreen({super.key, required this.classId});
+  const TeacherResourcesScreen({super.key, required this.classId, this.className});
 
   @override
   State<TeacherResourcesScreen> createState() => _TeacherResourcesScreenState();
@@ -439,6 +441,388 @@ class _TeacherResourcesScreenState extends State<TeacherResourcesScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDesktop = MediaQuery.of(context).size.width >= 800;
+
+    if (isDesktop) {
+      return _buildDesktopLayout();
+    }
+
+    return _buildMobileLayout();
+  }
+
+  Widget _buildDesktopLayout() {
+    final currentClassName = widget.className ?? 'Class';
+    return Scaffold(
+      backgroundColor: const Color(0xFFF8FAFC),
+      body: Column(
+        children: [
+          CCBreadcrumbBar(
+            items: [
+              BreadcrumbItem(
+                label: 'Classes',
+                onTap: () => Navigator.of(context).popUntil((route) => route.isFirst),
+              ),
+              BreadcrumbItem(
+                label: currentClassName,
+                onTap: () => Navigator.pop(context),
+              ),
+              const BreadcrumbItem(
+                label: 'Resources',
+              ),
+            ],
+            actions: [
+              ElevatedButton.icon(
+                onPressed: () => _showAddResourceBottomSheet(),
+                icon: const Icon(Icons.add, color: Colors.white, size: 18),
+                label: const Text(
+                  'Add Resource',
+                  style: TextStyle(fontWeight: FontWeight.w600, color: Colors.white, fontSize: 13),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF3B82F6),
+                  foregroundColor: Colors.white,
+                  elevation: 0,
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                ),
+              ),
+            ],
+          ),
+          Expanded(
+            child: _buildDesktopContent(),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDesktopFilterChip(String label, String value) {
+    final isSelected = _selectedFilter == value;
+    return GestureDetector(
+      onTap: () => setState(() => _selectedFilter = value),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        decoration: BoxDecoration(
+          color: isSelected ? const Color(0xFF3B82F6) : Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: isSelected ? const Color(0xFF3B82F6) : const Color(0xFFE2E8F0),
+          ),
+          boxShadow: [
+            if (!isSelected)
+              BoxShadow(color: Colors.black.withValues(alpha: 0.02), blurRadius: 4, offset: const Offset(0, 1)),
+          ],
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w500,
+            color: isSelected ? Colors.white : const Color(0xFF64748B),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDesktopContent() {
+    return Column(
+      children: [
+        // Filter & Search bar
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            border: Border(bottom: BorderSide(color: Color(0xFFE2E8F0))),
+          ),
+          child: Row(
+            children: [
+              _buildDesktopFilterChip('All', 'all'),
+              const SizedBox(width: 8),
+              _buildDesktopFilterChip('Links', 'link'),
+              const SizedBox(width: 8),
+              _buildDesktopFilterChip('Files', 'file'),
+              const SizedBox(width: 24),
+              Expanded(
+                child: TextField(
+                  controller: _searchController,
+                  style: const TextStyle(color: Color(0xFF1E293B)),
+                  cursorColor: const Color(0xFF3B82F6),
+                  onChanged: (value) => setState(() {}),
+                  decoration: InputDecoration(
+                    hintText: 'Search resources by name or URL...',
+                    hintStyle: const TextStyle(color: Color(0xFF94A3B8)),
+                    filled: true,
+                    fillColor: const Color(0xFFF8FAFC),
+                    prefixIcon: const Icon(Icons.search, color: Color(0xFF3B82F6), size: 20),
+                    suffixIcon: _searchController.text.isNotEmpty
+                        ? IconButton(
+                            icon: const Icon(Icons.clear, color: Color(0xFF94A3B8), size: 18),
+                            onPressed: () {
+                              _searchController.clear();
+                              setState(() {});
+                            },
+                          )
+                        : null,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: const BorderSide(color: Color(0xFF3B82F6)),
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        // Resources list
+        Expanded(
+          child: StreamBuilder<QuerySnapshot>(
+            stream: FirebaseFirestore.instance
+                .collection('classes')
+                .doc(widget.classId)
+                .collection('resources')
+                .orderBy('createdAt', descending: true)
+                .snapshots(),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Center(
+                  child: CcLoadingAnimation(color: Color(0xFF3B82F6)),
+                );
+              }
+
+              if (snapshot.hasError) {
+                return Center(
+                  child: Text(
+                    'Error: ${snapshot.error}',
+                    style: const TextStyle(color: Color(0xFF64748B)),
+                  ),
+                );
+              }
+
+              var docs = snapshot.data?.docs ?? [];
+
+              // Apply filter
+              docs = docs.where((doc) {
+                final type = (doc['type'] ?? 'link') as String;
+                if (_selectedFilter == 'all') return true;
+                return type == _selectedFilter;
+              }).toList();
+
+              // Apply search
+              if (_searchController.text.isNotEmpty) {
+                final query = _searchController.text.toLowerCase();
+                docs = docs.where((doc) {
+                  final data = doc.data() as Map<String, dynamic>;
+                  final description = (data['description'] ?? '').toString().toLowerCase();
+                  final fileName = (data['fileName'] ?? '').toString().toLowerCase();
+                  final url = (data['url'] ?? '').toString().toLowerCase();
+                  return description.contains(query) ||
+                      fileName.contains(query) ||
+                      url.contains(query);
+                }).toList();
+              }
+
+              if (docs.isEmpty) {
+                return Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(24),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF1F5F9),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(
+                          _selectedFilter == 'file'
+                              ? Icons.folder_open
+                              : _selectedFilter == 'link'
+                              ? Icons.link
+                              : Icons.inventory_2,
+                          color: const Color(0xFF94A3B8),
+                          size: 56,
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                      const Text(
+                        'No resources found',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFF1E293B),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      const Text(
+                        'Add your first resource by clicking the button above',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Color(0xFF64748B),
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              }
+
+              return GridView.builder(
+                padding: const EdgeInsets.all(24),
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 2,
+                  childAspectRatio: 1.4,
+                  crossAxisSpacing: 20,
+                  mainAxisSpacing: 20,
+                ),
+                itemCount: docs.length,
+                itemBuilder: (context, index) {
+                  final data = docs[index].data() as Map<String, dynamic>;
+                  final url = data['url'] ?? '';
+                  final description = data['description'] ?? '';
+                  final type = (data['type'] ?? 'link') as String;
+                  final fileName = (data['fileName'] ?? '') as String;
+                  final ext = (data['extension'] ?? '') as String;
+                  final size = (data['size'] ?? 0) as int;
+                  final createdAt = data['createdAt'] as Timestamp?;
+                  final resourceId = docs[index].id;
+
+                  final title = description.isNotEmpty
+                      ? description
+                      : (fileName.isNotEmpty ? fileName : 'Untitled Resource');
+
+                  final subtitle = type == 'file' ? fileName : url;
+                  final typeColor = _getTypeColor(type, ext);
+
+                  return Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(color: const Color(0xFFE2E8F0)),
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFF3B82F6).withValues(alpha: 0.04),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        borderRadius: BorderRadius.circular(14),
+                        onTap: () => _launchUrl(url),
+                        child: Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.all(8),
+                                    decoration: BoxDecoration(
+                                      color: typeColor.withValues(alpha: 0.1),
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    child: Icon(
+                                      _resourceIcon(type, ext),
+                                      color: typeColor,
+                                      size: 20,
+                                    ),
+                                  ),
+                                  const Spacer(),
+                                  PopupMenuButton(
+                                    itemBuilder: (context) => [
+                                      PopupMenuItem(
+                                        child: const Text('Delete'),
+                                        onTap: () => _deleteResource(resourceId),
+                                      ),
+                                    ],
+                                    icon: const Icon(
+                                      Icons.more_vert,
+                                      color: Color(0xFF94A3B8),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 12),
+                              Text(
+                                title,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w600,
+                                  color: Color(0xFF1E293B),
+                                  fontSize: 14,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                subtitle,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  color: Color(0xFF64748B),
+                                  fontSize: 11,
+                                ),
+                              ),
+                              const Spacer(),
+                              Row(
+                                children: [
+                                  if (type == 'file' && ext.isNotEmpty)
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 6,
+                                        vertical: 2,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: typeColor.withValues(alpha: 0.1),
+                                        borderRadius: BorderRadius.circular(4),
+                                      ),
+                                      child: Text(
+                                        ext.toUpperCase(),
+                                        style: TextStyle(
+                                          fontSize: 9,
+                                          fontWeight: FontWeight.bold,
+                                          color: typeColor,
+                                        ),
+                                      ),
+                                    ),
+                                  const Spacer(),
+                                  if (createdAt != null)
+                                    Text(
+                                      _formatDate(createdAt),
+                                      style: const TextStyle(
+                                        fontSize: 10,
+                                        color: Color(0xFF94A3B8),
+                                      ),
+                                    ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  );
+                },
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildMobileLayout() {
     return Scaffold(
       backgroundColor: const Color(0xFFF4F8FF),
       appBar: AppBar(
@@ -452,12 +836,11 @@ class _TeacherResourcesScreenState extends State<TeacherResourcesScreen> {
         ),
         backgroundColor: Colors.white,
         elevation: 2,
-        shadowColor: const Color(0xFF2E6BFF).withOpacity(0.1),
+        shadowColor: const Color(0xFF2E6BFF).withValues(alpha: 0.1),
         foregroundColor: const Color(0xFF0D1B3D),
       ),
       body: Column(
         children: [
-          // Search bar
           Padding(
             padding: const EdgeInsets.fromLTRB(20, 20, 20, 16),
             child: TextField(
@@ -498,7 +881,6 @@ class _TeacherResourcesScreenState extends State<TeacherResourcesScreen> {
               ),
             ),
           ),
-          // Filter chips
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20),
             child: SingleChildScrollView(
@@ -515,7 +897,6 @@ class _TeacherResourcesScreenState extends State<TeacherResourcesScreen> {
             ),
           ),
           const SizedBox(height: 16),
-          // Resources list
           Expanded(
             child: StreamBuilder<QuerySnapshot>(
               stream: FirebaseFirestore.instance
@@ -542,24 +923,18 @@ class _TeacherResourcesScreenState extends State<TeacherResourcesScreen> {
 
                 var docs = snapshot.data?.docs ?? [];
 
-                // Apply filter
                 docs = docs.where((doc) {
                   final type = (doc['type'] ?? 'link') as String;
                   if (_selectedFilter == 'all') return true;
                   return type == _selectedFilter;
                 }).toList();
 
-                // Apply search
                 if (_searchController.text.isNotEmpty) {
                   final query = _searchController.text.toLowerCase();
                   docs = docs.where((doc) {
                     final data = doc.data() as Map<String, dynamic>;
-                    final description = (data['description'] ?? '')
-                        .toString()
-                        .toLowerCase();
-                    final fileName = (data['fileName'] ?? '')
-                        .toString()
-                        .toLowerCase();
+                    final description = (data['description'] ?? '').toString().toLowerCase();
+                    final fileName = (data['fileName'] ?? '').toString().toLowerCase();
                     final url = (data['url'] ?? '').toString().toLowerCase();
                     return description.contains(query) ||
                         fileName.contains(query) ||
@@ -575,7 +950,7 @@ class _TeacherResourcesScreenState extends State<TeacherResourcesScreen> {
                         Container(
                           padding: const EdgeInsets.all(20),
                           decoration: BoxDecoration(
-                            color: const Color(0xFF2E6BFF).withOpacity(0.1),
+                            color: const Color(0xFF2E6BFF).withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(20),
                           ),
                           child: Icon(
@@ -629,9 +1004,7 @@ class _TeacherResourcesScreenState extends State<TeacherResourcesScreen> {
 
                     final title = description.isNotEmpty
                         ? description
-                        : (fileName.isNotEmpty
-                              ? fileName
-                              : 'Untitled Resource');
+                        : (fileName.isNotEmpty ? fileName : 'Untitled Resource');
 
                     final subtitle = type == 'file' ? fileName : url;
                     final typeColor = _getTypeColor(type, ext);
@@ -644,7 +1017,7 @@ class _TeacherResourcesScreenState extends State<TeacherResourcesScreen> {
                         border: Border.all(color: const Color(0x1A2E6BFF)),
                         boxShadow: [
                           BoxShadow(
-                            color: const Color(0xFF2E6BFF).withOpacity(0.06),
+                            color: const Color(0xFF2E6BFF).withValues(alpha: 0.06),
                             blurRadius: 8,
                             offset: const Offset(0, 2),
                           ),
@@ -660,14 +1033,13 @@ class _TeacherResourcesScreenState extends State<TeacherResourcesScreen> {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                // Header with icon and title
                                 Row(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Container(
                                       padding: const EdgeInsets.all(10),
                                       decoration: BoxDecoration(
-                                        color: typeColor.withOpacity(0.1),
+                                        color: typeColor.withValues(alpha: 0.1),
                                         borderRadius: BorderRadius.circular(12),
                                       ),
                                       child: Icon(
@@ -679,8 +1051,7 @@ class _TeacherResourcesScreenState extends State<TeacherResourcesScreen> {
                                     const SizedBox(width: 12),
                                     Expanded(
                                       child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
+                                        crossAxisAlignment: CrossAxisAlignment.start,
                                         children: [
                                           Text(
                                             title,
@@ -709,8 +1080,7 @@ class _TeacherResourcesScreenState extends State<TeacherResourcesScreen> {
                                       itemBuilder: (context) => [
                                         PopupMenuItem(
                                           child: const Text('Delete'),
-                                          onTap: () =>
-                                              _deleteResource(resourceId),
+                                          onTap: () => _deleteResource(resourceId),
                                         ),
                                       ],
                                       icon: const Icon(
@@ -721,7 +1091,6 @@ class _TeacherResourcesScreenState extends State<TeacherResourcesScreen> {
                                   ],
                                 ),
                                 const SizedBox(height: 12),
-                                // Metadata row
                                 Row(
                                   children: [
                                     if (type == 'file' && size > 0) ...[
@@ -747,10 +1116,8 @@ class _TeacherResourcesScreenState extends State<TeacherResourcesScreen> {
                                           vertical: 4,
                                         ),
                                         decoration: BoxDecoration(
-                                          color: typeColor.withOpacity(0.1),
-                                          borderRadius: BorderRadius.circular(
-                                            6,
-                                          ),
+                                          color: typeColor.withValues(alpha: 0.1),
+                                          borderRadius: BorderRadius.circular(6),
                                         ),
                                         child: Text(
                                           ext.toUpperCase(),

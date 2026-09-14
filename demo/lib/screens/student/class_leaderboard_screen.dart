@@ -1,67 +1,89 @@
 import 'package:flutter/material.dart';
 import 'package:demo/widgets/ui/cc_loading_animation.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:demo/widgets/cc_breadcrumb_bar.dart';
 
 class ClassLeaderboardScreen extends StatelessWidget {
   final String classId;
+  final String? className;
 
-  const ClassLeaderboardScreen({super.key, required this.classId});
+  const ClassLeaderboardScreen({
+    super.key,
+    required this.classId,
+    this.className,
+  });
 
   static const Color primaryDark = Color(0xFFF4F8FF);
 
   @override
   Widget build(BuildContext context) {
+    final classTitle = className ?? 'Class';
     return Scaffold(
       backgroundColor: primaryDark,
-      appBar: AppBar(
-        backgroundColor: primaryDark,
-        foregroundColor: const Color(0xFF0D1B3D),
-        elevation: 0,
-        centerTitle: true,
-        title: const Text(
-          "Class Leaderboard",
-          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
-        ),
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: StreamBuilder<QuerySnapshot>(
-          stream: FirebaseFirestore.instance
-              .collection('class_leaderboard')
-              .doc(classId)
-              .collection('students')
-              .orderBy('xp', descending: true)
-              .snapshots(),
-          builder: (context, snapshot) {
-            // 🔄 Loading
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return const Center(
-                child: CcLoadingAnimation(color: Color(0xFF2E6BFF)),
-              );
-            }
+      body: Column(
+        children: [
+          CCBreadcrumbBar(
+            items: [
+              BreadcrumbItem(
+                label: 'Classes',
+                icon: Icons.school_rounded,
+                onTap: () => Navigator.of(context).popUntil((route) => route.isFirst),
+              ),
+              BreadcrumbItem(
+                label: classTitle,
+                onTap: () => Navigator.pop(context),
+              ),
+              const BreadcrumbItem(label: 'Leaderboard'),
+            ],
+          ),
+          Expanded(
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 850),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+                  child: StreamBuilder<QuerySnapshot>(
+                    stream: FirebaseFirestore.instance
+                        .collection('class_leaderboard')
+                        .doc(classId)
+                        .collection('students')
+                        .orderBy('xp', descending: true)
+                        .snapshots(),
+                    builder: (context, snapshot) {
+                      // 🔄 Loading
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        return const Center(
+                          child: CcLoadingAnimation(color: Color(0xFF2E6BFF)),
+                        );
+                      }
 
-            // ❌ No data
-            if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-              return _EmptyLeaderboardCard();
-            }
+                      // ❌ No data
+                      if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                        return _EmptyLeaderboardCard();
+                      }
 
-            final players = snapshot.data!.docs;
+                      final players = snapshot.data!.docs;
 
-            return ListView.separated(
-              itemCount: players.length,
-              separatorBuilder: (_, __) => const SizedBox(height: 10),
-              itemBuilder: (context, index) {
-                final data = players[index].data() as Map<String, dynamic>;
+                      return ListView.separated(
+                        itemCount: players.length,
+                        separatorBuilder: (_, __) => const SizedBox(height: 10),
+                        itemBuilder: (context, index) {
+                          final data = players[index].data() as Map<String, dynamic>;
 
-                final rank = index + 1;
-                final name = data['studentName'] ?? 'Student';
-                final xp = data['xp'] ?? 0;
+                          final rank = index + 1;
+                          final name = data['studentName'] ?? 'Student';
+                          final xp = data['xp'] ?? 0;
 
-                return _LeaderboardTile(rank: rank, name: name, xp: xp);
-              },
-            );
-          },
-        ),
+                          return _LeaderboardTile(rank: rank, name: name, xp: xp);
+                        },
+                      );
+                    },
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

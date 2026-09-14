@@ -4,6 +4,7 @@ import 'package:demo/widgets/ui/cc_button.dart';
 import 'package:demo/widgets/ui/cc_card.dart';
 import 'package:demo/widgets/ui/cc_section_header.dart';
 import 'package:demo/widgets/ui/cc_text_field.dart';
+import 'package:demo/widgets/ui/responsive_container.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'student_home.dart';
@@ -65,8 +66,10 @@ class _ParentDetailsScreenState extends State<ParentDetailsScreen> {
           onPressed: () => Navigator.pop(context),
         ),
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
+      body: ResponsiveContainer(
+        maxWidth: 680,
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(24),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -172,7 +175,8 @@ class _ParentDetailsScreenState extends State<ParentDetailsScreen> {
           ],
         ),
       ),
-    );
+    ),
+  );
   }
 
   Future<void> _handleContinue() async {

@@ -6,6 +6,7 @@ import 'student_practice_quiz_attempt_screen.dart';
 
 class PracticeQuizLoaderScreen extends StatefulWidget {
   final String classId;
+  final String? className;
   final String studentId;
   final String studentName;
   final String conceptName;
@@ -13,6 +14,7 @@ class PracticeQuizLoaderScreen extends StatefulWidget {
   const PracticeQuizLoaderScreen({
     super.key,
     required this.classId,
+    this.className,
     required this.studentId,
     required this.studentName,
     required this.conceptName,
@@ -77,6 +79,7 @@ class _PracticeQuizLoaderScreenState extends State<PracticeQuizLoaderScreen> {
 
     return StudentPracticeQuizAttemptScreen(
       classId: widget.classId,
+      className: widget.className,
       quizId: practiceQuizId,
       studentId: widget.studentId,
       studentName: widget.studentName,

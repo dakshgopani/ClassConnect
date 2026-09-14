@@ -1,16 +1,10 @@
-import 'dart:io';
-
-import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:demo/widgets/ui/cc_loading_animation.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:intl/intl.dart';
 import 'pbl_submission_sheet.dart';
 import 'package:demo/widgets/ui/cc_decorated_background.dart';
-
-import 'package:demo/screens/student/resources/student_resources_screen.dart';
 
 class StudentPblScreen extends StatefulWidget {
   const StudentPblScreen({super.key});

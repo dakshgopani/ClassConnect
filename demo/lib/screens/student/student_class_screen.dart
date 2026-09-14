@@ -5,6 +5,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:demo/widgets/ui/cc_decorated_background.dart';
 import 'student_class_detail_screen.dart';
 import 'project_templates_screen.dart';
+import 'package:demo/widgets/ui/responsive_container.dart';
 
 class StudentClassesPage extends StatelessWidget {
   const StudentClassesPage({super.key});
@@ -72,27 +73,57 @@ class StudentClassesPage extends StatelessWidget {
                 );
               }
 
-              return ListView.builder(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 20,
-                  vertical: 24,
-                ),
-                itemCount: classSnapshot.data!.docs.length + 1,
-                itemBuilder: (context, index) {
-                  if (index == classSnapshot.data!.docs.length) {
-                    return _buildTemplateButton(context);
-                  }
+              final docs = classSnapshot.data!.docs;
 
-                  final doc = classSnapshot.data!.docs[index];
-                  final data = doc.data() as Map<String, dynamic>;
+              return ResponsiveContainer(
+                maxWidth: 1200,
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    final crossAxisCount = constraints.maxWidth >= 1050
+                        ? 3
+                        : (constraints.maxWidth >= 650 ? 2 : 1);
 
-                  return _buildModernClassCard(
-                    context,
-                    classId: doc.id,
-                    data: data,
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 20,
+                        vertical: 24,
+                      ),
+                      child: CustomScrollView(
+                        slivers: [
+                        SliverGrid(
+                          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: crossAxisCount,
+                            crossAxisSpacing: 16,
+                            mainAxisSpacing: 16,
+                            mainAxisExtent: 156,
+                          ),
+                          delegate: SliverChildBuilderDelegate(
+                            (context, index) {
+                              final doc = docs[index];
+                              final data = doc.data() as Map<String, dynamic>;
+
+                              return _buildModernClassCard(
+                                context,
+                                classId: doc.id,
+                                data: data,
+                                removeMargin: crossAxisCount > 1,
+                              );
+                            },
+                            childCount: docs.length,
+                          ),
+                        ),
+                        SliverToBoxAdapter(
+                          child: Padding(
+                            padding: const EdgeInsets.only(top: 16),
+                            child: _buildTemplateButton(context),
+                          ),
+                        ),
+                      ],
+                    ),
                   );
                 },
-              );
+              ),
+            );
             },
           );
         },
@@ -104,16 +135,20 @@ class StudentClassesPage extends StatelessWidget {
     BuildContext context, {
     required String classId,
     required Map<String, dynamic> data,
+    bool removeMargin = false,
   }) {
     return GestureDetector(
       onTap: () => Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (_) => StudentClassDetailScreen(classId: classId),
+          builder: (_) => StudentClassDetailScreen(
+            classId: classId,
+            className: data['class_name'] ?? data['name'] ?? 'Class',
+          ),
         ),
       ),
       child: Container(
-        margin: const EdgeInsets.only(bottom: 20),
+        margin: removeMargin ? EdgeInsets.zero : const EdgeInsets.only(bottom: 20),
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(20),
@@ -143,7 +178,7 @@ class StudentClassesPage extends StatelessWidget {
                 ),
               ),
               Padding(
-                padding: const EdgeInsets.all(20),
+                padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
                 child: Row(
                   children: [
                     // Color Accent Bar
@@ -159,6 +194,7 @@ class StudentClassesPage extends StatelessWidget {
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
                         children: [
                           Text(
                             data['class_name']?.toUpperCase() ??

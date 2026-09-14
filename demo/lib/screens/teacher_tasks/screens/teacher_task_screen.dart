@@ -52,6 +52,7 @@ class _TeacherTaskScreenState extends State<TeacherTaskScreen>
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
+    _tabController.addListener(() => setState(() {}));
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) throw Exception('Teacher not logged in');
     _teacherId = user.uid;
@@ -69,6 +70,121 @@ class _TeacherTaskScreenState extends State<TeacherTaskScreen>
 
   @override
   Widget build(BuildContext context) {
+    final isDesktop = MediaQuery.of(context).size.width >= 800;
+
+    if (isDesktop) {
+      return _buildDesktopLayout();
+    }
+
+    return _buildMobileLayout();
+  }
+
+  Widget _buildDesktopLayout() {
+    return Scaffold(
+      backgroundColor: _bg,
+      body: Column(
+        children: [
+          _buildHorizontalTabBar(),
+          Expanded(
+            child: CcDecoratedBackground(
+              child: TabBarView(
+                controller: _tabController,
+                children: [
+                  _buildDesktopTasksTab(),
+                  _buildDesktopPlannerTab(),
+                  _buildDesktopProductivityTab(),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHorizontalTabBar() {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF2E6BFF).withValues(alpha: 0.1),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [Color(0xFF3B82F6), Color(0xFF60A5FA)],
+              ),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: const Icon(Icons.task_alt, color: Colors.white, size: 20),
+          ),
+          const SizedBox(width: 16),
+          const Text(
+            'Workload Management',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: Color(0xFF0D1B3D),
+            ),
+          ),
+          const Spacer(),
+          _buildTabButton(Icons.task_alt, 'Tasks', 0),
+          const SizedBox(width: 8),
+          _buildTabButton(Icons.calendar_month, 'Planner', 1),
+          const SizedBox(width: 8),
+          _buildTabButton(Icons.speed, 'Productivity', 2),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTabButton(IconData icon, String label, int index) {
+    final isSelected = _tabController.index == index;
+    return GestureDetector(
+      onTap: () => _tabController.animateTo(index),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        decoration: BoxDecoration(
+          color: isSelected ? _accent.withValues(alpha: 0.1) : Colors.transparent,
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(
+            color: isSelected ? _accent : Colors.transparent,
+            width: 2,
+          ),
+        ),
+        child: Row(
+          children: [
+            Icon(
+              icon,
+              color: isSelected ? _accent : const Color(0xFF94A3B8),
+              size: 18,
+            ),
+            const SizedBox(width: 8),
+            Text(
+              label,
+              style: TextStyle(
+                color: isSelected ? _accent : const Color(0xFF94A3B8),
+                fontSize: 14,
+                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMobileLayout() {
     return Scaffold(
       backgroundColor: _bg,
       appBar: AppBar(
@@ -115,6 +231,279 @@ class _TeacherTaskScreenState extends State<TeacherTaskScreen>
           ],
         ),
       ),
+    );
+  }
+
+  // ═══════════════════════════════════════════
+  // DESKTOP TAB WRAPPERS
+  // ═══════════════════════════════════════════
+
+  Widget _buildDesktopTasksTab() {
+    return Column(
+      children: [
+        const SizedBox(height: 24),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 32),
+          child: _quickActionsCard(),
+        ),
+        const SizedBox(height: 16),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 32),
+          child: Row(
+            children: [
+              _filterChip('Today', _TimeFilter.today, Icons.sunny),
+              const SizedBox(width: 10),
+              _filterChip('Tomorrow', _TimeFilter.tomorrow, Icons.upcoming),
+              const SizedBox(width: 10),
+              _filterChip('This Week', _TimeFilter.next7, Icons.calendar_view_week),
+            ],
+          ),
+        ),
+        Expanded(
+          child: StreamBuilder<List<TeacherTask>>(
+            stream: _streamForFilter(),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Center(child: CcLoadingAnimation(color: _accent));
+              }
+              final tasks = snapshot.data ?? [];
+              if (tasks.isEmpty) {
+                return _emptyTaskState();
+              }
+
+              final pending = tasks.where((t) => t.status != 'completed').toList();
+              final completed = tasks.where((t) => t.status == 'completed').toList();
+              final workload = calculateDailyWorkload(tasks, DateTime.now());
+
+              return ListView(
+                controller: _listController,
+                padding: const EdgeInsets.fromLTRB(32, 16, 32, 32),
+                children: [
+                  _quickStatsHero(tasks, workload),
+                  if (_filter == _TimeFilter.next7) _next7BarChart(tasks),
+                  if (pending.isNotEmpty) ...[
+                    _sectionTitle('Pending', pending.length, Icons.pending_actions, Colors.amber),
+                    const SizedBox(height: 12),
+                    ...pending.map(_taskCard),
+                  ],
+                  if (completed.isNotEmpty) ...[
+                    const SizedBox(height: 20),
+                    _sectionTitle('Completed', completed.length, Icons.check_circle, Colors.green),
+                    const SizedBox(height: 12),
+                    ...completed.map(_taskCard),
+                  ],
+                ],
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildDesktopPlannerTab() {
+    final now = DateTime.now();
+    final start = now.subtract(const Duration(days: 30));
+    final end = now.add(const Duration(days: 30));
+
+    return StreamBuilder<List<TeacherTask>>(
+      stream: _queryService.getPlannedTasksInRange(
+        teacherId: _teacherId,
+        startDate: _fmt(start),
+        endDate: _fmt(end),
+      ),
+      builder: (context, snapshot) {
+        final tasks = snapshot.data ?? [];
+        final events = <DateTime, List<TeacherTask>>{};
+        for (final t in tasks) {
+          if (t.plannedForDate == null) continue;
+          final d = DateTime.parse(t.plannedForDate!);
+          final key = DateTime(d.year, d.month, d.day);
+          events.putIfAbsent(key, () => []);
+          events[key]!.add(t);
+        }
+
+        DateTime focusedDay = now;
+        DateTime selectedDay = now;
+
+        return StatefulBuilder(
+          builder: (context, setCalState) {
+            final selectedKey = DateTime(selectedDay.year, selectedDay.month, selectedDay.day);
+            final dayTasks = events[selectedKey] ?? [];
+
+            return ListView(
+              padding: const EdgeInsets.fromLTRB(32, 24, 32, 32),
+              children: [
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      flex: 2,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: _surface,
+                          borderRadius: _cardRadius,
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.3),
+                              blurRadius: 20,
+                              offset: const Offset(0, 10),
+                            ),
+                          ],
+                        ),
+                        child: Padding(
+                          padding: const EdgeInsets.all(8),
+                          child: TableCalendar<TeacherTask>(
+                            firstDay: start,
+                            lastDay: end,
+                            focusedDay: focusedDay,
+                            selectedDayPredicate: (day) => isSameDay(day, selectedDay),
+                            eventLoader: (day) => events[DateTime(day.year, day.month, day.day)] ?? [],
+                            calendarStyle: CalendarStyle(
+                              todayDecoration: BoxDecoration(
+                                color: _accent.withValues(alpha: 0.6),
+                                shape: BoxShape.circle,
+                              ),
+                              selectedDecoration: const BoxDecoration(
+                                color: _accentCyan,
+                                shape: BoxShape.circle,
+                              ),
+                              defaultTextStyle: const TextStyle(color: Color(0xFF0D1B3D)),
+                              weekendTextStyle: const TextStyle(color: Color(0xFF5C6B8C)),
+                              outsideTextStyle: const TextStyle(color: Color(0xFF8DA6D8)),
+                              markerDecoration: BoxDecoration(
+                                color: _accent,
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                            headerStyle: const HeaderStyle(
+                              titleTextStyle: TextStyle(color: Color(0xFF0D1B3D), fontSize: 17),
+                              leftChevronIcon: Icon(Icons.chevron_left, color: Color(0xFF0D1B3D)),
+                              rightChevronIcon: Icon(Icons.chevron_right, color: Color(0xFF0D1B3D)),
+                            ),
+                            daysOfWeekStyle: const DaysOfWeekStyle(
+                              weekdayStyle: TextStyle(color: Color(0xFF5C6B8C)),
+                              weekendStyle: TextStyle(color: Color(0xFF5C6B8C)),
+                            ),
+                            onDaySelected: (sel, foc) {
+                              setCalState(() {
+                                selectedDay = sel;
+                                focusedDay = foc;
+                              });
+                            },
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 24),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              const Icon(Icons.event_note, color: _accent, size: 20),
+                              const SizedBox(width: 8),
+                              Text(
+                                'Tasks on ${selectedDay.toString().substring(0, 10)}',
+                                style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: Color(0xFF0D1B3D)),
+                              ),
+                              const Spacer(),
+                              Text(
+                                '${dayTasks.length} task${dayTasks.length == 1 ? '' : 's'}',
+                                style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 16),
+                          if (dayTasks.isEmpty)
+                            Container(
+                              padding: const EdgeInsets.all(24),
+                              decoration: BoxDecoration(
+                                color: _surface,
+                                borderRadius: _cardRadius,
+                              ),
+                              child: const Center(
+                                child: Text('No tasks planned for this day.', style: TextStyle(color: Colors.black54)),
+                              ),
+                            )
+                          else
+                            ...dayTasks.map(_taskCard),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildDesktopProductivityTab() {
+    final now = DateTime.now();
+    final rangeStart = now.subtract(const Duration(days: 30));
+
+    return StreamBuilder<List<TeacherTask>>(
+      stream: _queryService.getPlannedTasksInRange(
+        teacherId: _teacherId,
+        startDate: _fmt(rangeStart),
+        endDate: _fmt(now),
+      ),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting && (snapshot.data == null || snapshot.data!.isEmpty)) {
+          return const Center(child: CcLoadingAnimation(color: _accent));
+        }
+
+        final tasks = snapshot.data ?? [];
+
+        if (tasks.isEmpty) {
+          return Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.speed, size: 48, color: Colors.grey.shade400),
+                const SizedBox(height: 12),
+                Text(
+                  'Complete some tasks to see\nyour productivity trends.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: Colors.grey.shade600, fontSize: 15),
+                ),
+              ],
+            ),
+          );
+        }
+
+        final weekly = calculateProductivity(tasks, now.subtract(const Duration(days: 7)));
+        final monthly = calculateProductivity(tasks, now.subtract(const Duration(days: 30)));
+        final missedTasks = tasksMissedDeadlines(tasks);
+        final weeklyWorkload = calculateWeeklyWorkload(tasks, now.subtract(Duration(days: now.weekday - 1)));
+        final overplannedDays = detectOverplannedDays(weeklyWorkload.minutesPerDay);
+
+        _loadTipsIfNeeded(weekly, missedTasks.length, overplannedDays);
+
+        return GridView(
+          padding: const EdgeInsets.fromLTRB(32, 24, 32, 32),
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 2,
+            mainAxisSpacing: 20,
+            crossAxisSpacing: 20,
+            childAspectRatio: 1.2,
+          ),
+          children: [
+            _productivityScoreCard(weekly),
+            _streakCard(weekly),
+            _weeklyTrendChart(tasks),
+            _metricsGrid(weekly, monthly),
+            _taskTypeBreakdown(weekly),
+            if (overplannedDays.isNotEmpty) _burnoutWarning(weeklyWorkload, overplannedDays),
+            if (missedTasks.isNotEmpty) _deadlineWarning(missedTasks),
+            _aiTipsSection(),
+          ],
+        );
+      },
     );
   }
 

@@ -10,6 +10,7 @@ import 'package:demo/widgets/ui/cc_decorated_background.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'question_detail_screen.dart';
 import 'ask_question_screen.dart';
+import 'package:demo/widgets/ui/responsive_container.dart';
 
 class QuestionsListScreen extends StatefulWidget {
   final bool showAppBar;
@@ -107,8 +108,11 @@ class _QuestionsListScreenState extends State<QuestionsListScreen> {
       //   ),
       // ),
       body: CcDecoratedBackground(
-        child: Column(
-          children: [
+        child: Center(
+          child: ResponsiveContainer(
+            maxWidth: 1100,
+            child: Column(
+              children: [
             // Search bar
             Padding(
               padding: const EdgeInsets.all(16),
@@ -207,7 +211,9 @@ class _QuestionsListScreenState extends State<QuestionsListScreen> {
           ],
         ),
       ),
-    );
+    ),
+  ),
+);
   }
 
   Widget _buildQuestionsList(List<Question> questions) {
